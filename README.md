@@ -27,6 +27,10 @@ XP never goes below 0, but it can drop, and your rank can drop with it.
 
 ## Where your data lives
 
-This GitHub Pages version saves your progress in your browser (`localStorage`) on the device you use. Use the same browser every day, and don't clear its site data, or your log is lost.
+Your progress is always saved in your browser (`localStorage`), so the app works offline.
+
+**Sync (optional):** tap **Sync off** at the top, then **Turn on sync**. Your log is copied online under a private 32-character sync code. Open **Copy link for another device** on your phone or laptop to connect it. Changes reach your other devices within a minute. No account or password is needed, but anyone with your code can see and change your log, so keep it private.
+
+Sync runs on Supabase. The database stores only a SHA-256 hash of each sync code, the data table is in a private schema the public API can't reach, and the app can only read and write through two functions (`levelup_pull`, `levelup_push`) that check the code, the document name and its size. The setup is in [`supabase/levelup_sync.sql`](supabase/levelup_sync.sql).
 
 The whole app is one file, [`index.html`](index.html), with no build step.

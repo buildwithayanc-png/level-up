@@ -375,6 +375,30 @@ input[type="text"]:focus{outline:2px solid var(--accent);outline-offset:0;border
 .foot .dot.ok{background:var(--done)}
 .foot .dot.warn{background:var(--accent)}
 
+/* Sync (GitHub Pages version) */
+.brand{margin-right:auto}
+.dot{display:inline-block;width:8px;height:8px;border-radius:999px;background:var(--ink-3);flex:none}
+.dot.ok{background:var(--done)}
+.dot.warn{background:var(--accent)}
+.dot.bad{background:var(--miss)}
+.dot.busy{background:var(--accent);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+.sync-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap}
+.sync-chip:hover{border-color:var(--ink-3);color:var(--ink)}
+.banner a{color:inherit;font-weight:800}
+.sync-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:24px;align-items:start}
+@media (max-width:880px){.sync-grid{grid-template-columns:minmax(0,1fr)}}
+.sync-card{padding:22px;display:flex;flex-direction:column;gap:16px}
+.sync-card p{margin:0;max-width:62ch}
+.sync-card h3{margin:0;font-size:15px}
+.sync-status{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.code-box{font-family:var(--font-mono);font-weight:700;font-size:16px;letter-spacing:.04em;background:var(--surface-2);border:1px dashed var(--line);border-radius:var(--r-sm);padding:12px 14px;overflow-wrap:anywhere;user-select:all}
+.hint{font-size:13px;color:var(--ink-2)}
+.divider{border:0;border-top:1px solid var(--line-2);margin:4px 0;width:100%}
+.sync-join{display:flex;gap:8px;flex-wrap:wrap}
+.sync-join input{flex:1;min-width:200px}
+.how ul{margin:0;padding-left:18px;display:grid;gap:8px;font-size:14px;color:var(--ink-2)}
+
 /* Loading */
 .loading{padding:40px 10px;text-align:center;color:var(--ink-2)}
 
@@ -411,6 +435,7 @@ input[type="text"]:focus{outline:2px solid var(--accent);outline-offset:0;border
       <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--ink)"/><path d="M9 19.5l7-7 7 7" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 25l7-7 7 7" fill="none" stroke="var(--bg)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>
       <span>Level Up</span>
     </a>
+    <a id="sync-chip" class="sync-chip" href="#sync" hidden></a>
     <nav class="tabs" aria-label="Sections">
       <a href="#today" data-tab="today">Today</a>
       <a href="#history" data-tab="history">History</a>
@@ -479,8 +504,12 @@ const STARTERS = [
   {name:'Plan tomorrow', cat:'work', diff:1, target:'Top 3 priorities'},
   {name:'Read', cat:'mind', diff:1, target:'20 minutes'}
 ];
-const VIEWS = ['today','history','tasks','ranks'];
+const VIEWS = ['today','history','tasks','ranks','sync'];
 const LS_KEY = 'levelup.v1';
+// Cross-device sync for the standalone (GitHub Pages) version. The key is a public, publishable key.
+const SYNC_CFG = {url:'https://jbthimqagqthsoraffyl.supabase.co', key:'sb_publishable_M4MbmkOciErD-UV8A9GSMw_BEWVk7rj'};
+const SYNC_LS = 'levelup.sync.v1';
+const CODE_ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
 
 /* ---------- Helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -524,7 +553,10 @@ const S = {
   form: blankForm(), formErr:'',
   confirmRemove:null,
   histLimit:10,
-  calc:null
+  calc:null,
+  standalone:false,
+  sync:{code:null, status:'off', last:null, dirty:new Set(), err:''},
+  syncInput:'', syncErr:'', syncArm:null
 };
 
 function normTasks(doc){
@@ -660,7 +692,11 @@ function daysText(t){
 let col = null, loadTimer = null;
 const queue = {};
 function saveDoc(id, body){
-  if (S.mode === 'local') { persistLocal(); return; }
+  if (S.mode === 'local') {
+    persistLocal();
+    if (S.sync.code) { S.sync.dirty.add(id); saveSync(); schedulePush(); }
+    return;
+  }
   if (S.mode !== 'cloud') return;
   const q = queue[id] || (queue[id] = {body:null, inflight:false, dirty:false});
   q.body = body; q.dirty = true;
@@ -712,9 +748,171 @@ function goLocal(standalone){
     }
   } catch (e) {}
   S.loaded = true;
-  if (standalone) showBanner('<b>Your progress is saved on this device, in this browser.</b> Use the same browser every day. Clearing your browser data erases it.');
+  S.standalone = !!standalone;
+  if (standalone) { loadSync(); updateLocalBanner(); }
   else showBanner('<b>Saved in this browser only.</b> Sign in to claude.ai to keep your progress in your account.');
-  render();
+  route();
+  if (S.sync.code) syncPull();
+}
+function updateLocalBanner(){
+  if (!S.standalone) return;
+  if (S.sync.code) { hideBanner(); return; }
+  if (syncAvailable()) showBanner('<b>Saved in this browser only.</b> <a href="#sync">Turn on sync</a> to use Level Up on your phone and laptop and keep your log safe online.');
+  else showBanner('<b>Your progress is saved on this device, in this browser.</b> Use the same browser every day. Clearing your browser data erases it.');
+}
+
+/* ---------- Sync (standalone version only) ---------- */
+function syncAvailable(){ return S.standalone && !!SYNC_CFG.url && !!SYNC_CFG.key; }
+const validCode = c => typeof c === 'string' && /^[A-Za-z0-9]{32,64}$/.test(c);
+const cleanCode = s => String(s || '').replace(/[^A-Za-z0-9]/g, '');
+const showCode = c => (c.match(/.{1,8}/g) || []).join('-');
+function newCode(){
+  const a = new Uint32Array(32);
+  crypto.getRandomValues(a);
+  return Array.from(a, n => CODE_ALPHA[n % CODE_ALPHA.length]).join('');
+}
+function loadSync(){
+  try {
+    const o = JSON.parse(localStorage.getItem(SYNC_LS) || 'null');
+    if (o && validCode(o.code)) {
+      S.sync.code = o.code;
+      S.sync.dirty = new Set(Array.isArray(o.dirty) ? o.dirty.filter(x => typeof x === 'string') : []);
+      S.sync.last = typeof o.last === 'number' ? o.last : null;
+      S.sync.status = 'ok';
+    }
+  } catch (e) {}
+}
+function saveSync(){
+  try {
+    if (S.sync.code) localStorage.setItem(SYNC_LS, JSON.stringify({code:S.sync.code, dirty:[...S.sync.dirty], last:S.sync.last}));
+    else localStorage.removeItem(SYNC_LS);
+  } catch (e) {}
+}
+async function rpc(fn, args){
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 15000);
+  try {
+    const headers = {'apikey': SYNC_CFG.key, 'Content-Type': 'application/json'};
+    if (SYNC_CFG.key.startsWith('ey')) headers.Authorization = 'Bearer ' + SYNC_CFG.key;
+    const r = await fetch(SYNC_CFG.url + '/rest/v1/rpc/' + fn, {method:'POST', headers, body:JSON.stringify(args), signal:ctl.signal});
+    const text = await r.text();
+    if (!r.ok) { const e = new Error('Sync request failed (' + r.status + ')'); e.status = r.status; throw e; }
+    return text ? JSON.parse(text) : null;
+  } finally { clearTimeout(timer); }
+}
+const syncFail = e => (e && e.status) ? 'error' : 'offline';
+function setSync(status){ S.sync.status = status; renderFoot(); if (S.view === 'sync') render(); }
+function syncInfo(){
+  const s = S.sync;
+  if (!s.code) return {dot:'', short:'Sync off', msg:'Saved in this browser only.'};
+  if (s.status === 'syncing') return {dot:'busy', short:'Syncing…', msg:'Syncing your log…'};
+  if (s.status === 'offline') return {dot:'warn', short:'Offline', msg:'Offline. Your changes are saved here and will sync when you reconnect.'};
+  if (s.status === 'error') return {dot:'bad', short:'Sync error', msg:'Sync failed. Your changes are safe on this device and will retry.'};
+  return {dot:'ok', short:'Synced', msg: s.last ? 'Synced ' + ago(s.last) + '.' : 'Sync is on.'};
+}
+function ago(ts){
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + ' min ago';
+  return 'at ' + new Date(ts).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+}
+function docBody(id){
+  if (id === 'tasks') return {list: S.tasks};
+  const d = id.slice(2), day = S.days[d];
+  return day ? {date:d, plan:day.plan, marks:day.marks} : null;
+}
+function applyRemote(rows, replace){
+  const remote = {};
+  (Array.isArray(rows) ? rows : []).forEach(r => {
+    if (r && typeof r.doc_id === 'string' && r.body && typeof r.body === 'object') remote[r.doc_id] = r.body;
+  });
+  if (replace) { S.tasks = []; S.days = {}; S.sync.dirty = new Set(); }
+  else {
+    // Anything only this device has goes up on the next push.
+    if (S.tasks.length && !('tasks' in remote)) S.sync.dirty.add('tasks');
+    Object.keys(S.days).forEach(d => { if (!(('d-' + d) in remote)) S.sync.dirty.add('d-' + d); });
+  }
+  Object.keys(remote).forEach(id => {
+    if (S.sync.dirty.has(id)) return; // unsynced local edits win
+    if (id === 'tasks') S.tasks = normTasks(remote[id]);
+    else if (/^d-\d{4}-\d{2}-\d{2}$/.test(id)) S.days[id.slice(2)] = normDay(id.slice(2), remote[id]);
+  });
+}
+let pulling = false, pushing = false, pushTimer = null;
+async function syncPull(){
+  if (!syncAvailable() || !S.sync.code || pulling) return;
+  pulling = true; setSync('syncing');
+  try {
+    const rows = await rpc('levelup_pull', {sync_key: S.sync.code});
+    applyRemote(rows, false);
+    persistLocal();
+    S.sync.last = Date.now(); saveSync();
+    pulling = false;
+    render();
+    if (S.sync.dirty.size) syncPush(); else setSync('ok');
+  } catch (e) { pulling = false; setSync(syncFail(e)); }
+}
+function schedulePush(){ clearTimeout(pushTimer); pushTimer = setTimeout(syncPush, 800); }
+async function syncPush(){
+  if (!syncAvailable() || !S.sync.code || pushing || pulling) return;
+  if (!S.sync.dirty.size) { setSync('ok'); return; }
+  pushing = true; setSync('syncing');
+  let fail = null;
+  for (const id of [...S.sync.dirty]) {
+    const body = docBody(id);
+    if (!body) { S.sync.dirty.delete(id); continue; }
+    const sent = JSON.stringify(body);
+    try {
+      await rpc('levelup_push', {sync_key: S.sync.code, doc: id, data: body});
+      if (JSON.stringify(docBody(id)) === sent) S.sync.dirty.delete(id);
+    } catch (e) { fail = e; break; }
+  }
+  pushing = false;
+  saveSync();
+  if (fail) { setSync(syncFail(fail)); return; }
+  if (S.sync.dirty.size) { syncPush(); return; }
+  S.sync.last = Date.now(); saveSync(); setSync('ok');
+}
+async function syncOn(){
+  S.sync.code = newCode();
+  S.sync.dirty = new Set(['tasks']);
+  Object.keys(S.days).forEach(d => S.sync.dirty.add('d-' + d));
+  S.sync.last = null;
+  saveSync(); updateLocalBanner();
+  await syncPush();
+  toast(S.sync.status === 'ok' ? 'Sync is on. Your log is saved online.' : 'Sync is on. It will upload when the connection works.');
+}
+async function syncJoin(){
+  const code = cleanCode(S.syncInput);
+  if (!validCode(code)) { S.syncErr = 'That code doesn’t look right. It’s 32 letters and numbers, like the one on your other device.'; render(); return; }
+  if ((S.tasks.length || Object.keys(S.days).length) && S.syncArm !== 'join') { S.syncArm = 'join'; S.syncErr = ''; render(); return; }
+  S.syncArm = null; S.syncErr = ''; S.syncBusy = true; render();
+  try {
+    const rows = await rpc('levelup_pull', {sync_key: code});
+    if (!Array.isArray(rows) || !rows.length) { S.syncErr = 'No log found for that code. Check it on your other device and try again.'; return; }
+    applyRemote(rows, true);
+    S.sync.code = code; S.sync.last = Date.now(); S.sync.status = 'ok'; S.syncInput = '';
+    persistLocal(); saveSync(); updateLocalBanner();
+    toast('Connected. This device now shares your log.');
+    S.selDate = todayStr();
+    go('today');
+  } catch (e) {
+    S.syncErr = e && e.status ? 'Couldn’t reach the sync server. Try again in a moment.' : 'You’re offline. Connect to the internet and try again.';
+  } finally { S.syncBusy = false; render(); }
+}
+function syncOff(){
+  clearTimeout(pushTimer);
+  S.sync = {code:null, status:'off', last:null, dirty:new Set(), err:''};
+  saveSync(); updateLocalBanner(); render();
+  toast('Sync is off on this device. Your log is still here.');
+}
+function copyText(text, okMsg){
+  const fallback = () => {
+    const el = $('#sync-code'); if (!el) return;
+    const r = document.createRange(); r.selectNodeContents(el);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    toast('Code selected. Press Ctrl+C to copy it.');
+  };
+  try { navigator.clipboard.writeText(text).then(() => toast(okMsg), fallback); } catch (e) { fallback(); }
 }
 function onSnap(snap){
   clearTimeout(loadTimer);
@@ -803,6 +1001,7 @@ function render(calc){
   else if (S.view === 'history') app.innerHTML = historyHTML(calc);
   else if (S.view === 'tasks') app.innerHTML = tasksHTML();
   else if (S.view === 'ranks') app.innerHTML = ranksHTML(calc);
+  else if (S.view === 'sync') app.innerHTML = syncHTML();
   else app.innerHTML = todayHTML(calc);
   renderFoot();
   if (active) {
@@ -814,8 +1013,70 @@ function renderFoot(){
   const f = $('#foot');
   let dot = '', msg = 'Loading…';
   if (S.mode === 'cloud') { dot = S.readOnly ? 'warn' : 'ok'; msg = S.readOnly ? 'Read-only right now.' : 'Saved to your Claude account. Only you can see your log.'; }
-  else if (S.mode === 'local') { dot = 'warn'; msg = 'Saved in this browser only.'; }
+  else if (S.mode === 'local') {
+    if (S.sync.code) { const i = syncInfo(); dot = i.dot; msg = i.msg; }
+    else { dot = 'warn'; msg = 'Saved in this browser only.'; }
+  }
   f.innerHTML = '<span class="dot ' + dot + '"></span><span>' + esc(msg) + '</span>';
+  const chip = $('#sync-chip');
+  if (!syncAvailable()) chip.hidden = true;
+  else {
+    const i = syncInfo();
+    chip.hidden = false;
+    chip.innerHTML = '<span class="dot ' + i.dot + '"></span>' + esc(i.short);
+    if (S.view === 'sync') chip.setAttribute('aria-current', 'page'); else chip.removeAttribute('aria-current');
+  }
+}
+
+function syncHTML(){
+  const s = S.sync, info = syncInfo();
+  let main;
+  if (s.code) {
+    const armed = S.syncArm === 'off';
+    main = `
+    <h2 class="h2">Sync is on</h2>
+    <div class="sync-status"><span class="dot ${info.dot}"></span><span>${esc(info.msg)}</span></div>
+    <div class="field">
+      <span class="label">Your sync code</span>
+      <div class="code-box" id="sync-code">${esc(showCode(s.code))}</div>
+      <p class="hint">Anyone with this code can see and change your log. Keep it private, like a password.</p>
+    </div>
+    <div class="add-row" style="margin-top:0">
+      <button type="button" class="btn primary" data-action="copy-link" data-key="copy-link">Copy link for another device</button>
+      <button type="button" class="btn" data-action="copy-code" data-key="copy-code">Copy code</button>
+      <button type="button" class="btn ghost" data-action="sync-now" data-key="sync-now">Sync now</button>
+    </div>
+    <hr class="divider">
+    <div>
+      <button type="button" class="btn small ghost danger ${armed ? 'armed' : ''}" data-action="sync-off" data-key="sync-off">${armed ? 'Yes, turn off sync' : 'Turn off sync on this device'}</button>
+      ${armed ? '<p class="hint" style="margin-top:8px">Your log stays on this device and online. You can reconnect later with the code.</p>' : ''}
+    </div>`;
+  } else {
+    const armed = S.syncArm === 'join';
+    main = `
+    <h2 class="h2">Sync across devices</h2>
+    <p class="muted">Right now your log is saved only in this browser. Turn on sync to keep it online and use Level Up on your phone and laptop with the same XP, streak and history.</p>
+    <div><button type="button" class="btn primary" data-action="sync-on" data-key="sync-on" ${S.syncBusy ? 'disabled' : ''}>Turn on sync</button></div>
+    <hr class="divider">
+    <h3>Already using Level Up on another device?</h3>
+    <p class="hint">Open Sync on that device, copy its link or code, and paste it here.</p>
+    <div class="sync-join">
+      <input type="text" id="sync-input" placeholder="Paste your sync code" value="${esc(S.syncInput)}" autocomplete="off" spellcheck="false" data-key="sync-input" aria-label="Sync code">
+      <button type="button" class="btn ${armed ? 'danger armed' : ''}" data-action="sync-join" data-key="sync-join" ${S.syncBusy ? 'disabled' : ''}>${S.syncBusy ? 'Connecting…' : armed ? 'Yes, replace and connect' : 'Connect'}</button>
+    </div>
+    ${armed ? '<p class="hint">This device already has a log. Connecting replaces it with the synced one.</p>' : ''}
+    ${S.syncErr ? `<p class="field-err" role="alert">${esc(S.syncErr)}</p>` : ''}`;
+  }
+  return `<div class="sync-grid">
+    <section class="card sync-card">${main}</section>
+    <section class="card how"><h3 class="eyebrow muted">How sync works</h3><ul>
+      <li>Your log is saved online under a private sync code. No account or password needed.</li>
+      <li>Open the link on your phone or laptop once, and that device stays connected.</li>
+      <li>Changes show up on your other devices within a minute, or as soon as you switch back to the app.</li>
+      <li>Offline? Keep ticking. Everything uploads when you’re back online.</li>
+      <li>Keep the code somewhere safe. Without it you can’t connect a new device.</li>
+    </ul></section>
+  </div>`;
 }
 function showBanner(html){ const b = $('#banner'); b.innerHTML = '<span>' + html + '</span>'; b.hidden = false; }
 function hideBanner(){ $('#banner').hidden = true; }
@@ -1205,8 +1466,15 @@ function floatXP(rect, text, neg){
 
 /* ---------- Events ---------- */
 function route(){
-  const h = (location.hash || '').replace('#', '');
-  const v = VIEWS.includes(h) ? h : 'today';
+  let h = (location.hash || '').replace('#', '');
+  if (h.startsWith('sync=')) {
+    // A link from another device: prefill the code, then drop it from the address bar.
+    S.syncInput = cleanCode(decodeURIComponent(h.slice(5)));
+    try { history.replaceState(null, '', location.pathname + location.search + '#sync'); } catch (e) {}
+    h = 'sync';
+  }
+  let v = VIEWS.includes(h) ? h : 'today';
+  if (v === 'sync' && !syncAvailable()) v = 'today';
   if (v !== S.view) { S.view = v; window.scrollTo(0, 0); }
   render();
 }
@@ -1218,8 +1486,22 @@ document.addEventListener('click', e => {
   if (!el || el.disabled) return;
   const a = el.dataset.action, id = el.dataset.id;
   if (a !== 't-remove') S.confirmRemove = null;
+  if (a !== 'sync-off' && a !== 'sync-join') S.syncArm = null;
   const today = todayStr();
   switch (a) {
+    case 'sync-on':
+      if (!syncAvailable() || S.syncBusy) return;
+      S.syncBusy = true; render();
+      syncOn().finally(() => { S.syncBusy = false; render(); });
+      break;
+    case 'sync-join': if (!S.syncBusy) syncJoin(); break;
+    case 'sync-now': syncPull(); break;
+    case 'sync-off':
+      if (S.syncArm !== 'off') { S.syncArm = 'off'; render(); return; }
+      S.syncArm = null; syncOff();
+      break;
+    case 'copy-code': if (S.sync.code) copyText(showCode(S.sync.code), 'Sync code copied.'); break;
+    case 'copy-link': if (S.sync.code) copyText(location.origin + location.pathname + '#sync=' + S.sync.code, 'Link copied. Open it on your other device.'); break;
     case 'sel-day': S.selDate = el.dataset.date; S.openReason = null; render(); break;
     case 'week-prev': S.selDate = addDays(S.selDate, -7); S.openReason = null; render(); break;
     case 'week-next': S.selDate = addDays(S.selDate, 7); S.openReason = null; render(); break;
@@ -1313,11 +1595,13 @@ document.addEventListener('input', e => {
   if (t.id === 'tf-name') { S.form.name = t.value; if (S.formErr && t.value.trim()) { S.formErr = ''; const p = document.querySelector('.field-err'); if (p) p.remove(); } }
   else if (t.id === 'tf-target') S.form.target = t.value;
   else if (t.id === 'reason-note') S.reasonNote = t.value;
+  else if (t.id === 'sync-input') S.syncInput = t.value;
 });
 document.addEventListener('change', e => {
   if (e.target.id === 'tf-once') { S.form.once = e.target.checked; render(); }
 });
 document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'sync-input' && !S.syncBusy) { e.preventDefault(); syncJoin(); return; }
   if (e.key === 'Escape' && S.openReason) { const id = S.openReason; S.openReason = null; render(); const t = document.querySelector('[data-key="tick-' + id + '"]'); if (t) t.focus(); }
 });
 document.addEventListener('submit', e => {
@@ -1344,7 +1628,14 @@ document.addEventListener('submit', e => {
 
 // Roll over to the new day without a reload.
 setInterval(() => { if (todayStr() !== S.lastToday && S.loaded) render(); }, 60000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && todayStr() !== S.lastToday && S.loaded) render(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (todayStr() !== S.lastToday && S.loaded) render();
+  if (S.sync.code) syncPull();
+});
+// Pick up changes made on other devices.
+setInterval(() => { if (S.sync.code && !document.hidden) syncPull(); }, 60000);
+window.addEventListener('online', () => { if (S.sync.code) syncPull(); });
 
 boot();
 })();
