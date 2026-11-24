@@ -185,7 +185,7 @@ button:disabled{cursor:not-allowed}
 .group-head .count{font-family:var(--font-mono);font-size:12px;color:var(--ink-3)}
 .group-body{border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}
 .task{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 14px}
-.task + .task, .reason-box + .task{border-top:1px solid var(--line-2)}
+.task + .task, .reason-box + .task, .detail-box + .task{border-top:1px solid var(--line-2)}
 .tick{width:36px;height:36px;border-radius:11px;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;transition:transform .12s ease, background .15s ease, border-color .15s ease}
 .tick:hover:not(:disabled){border-color:var(--done)}
 .tick:active:not(:disabled){transform:scale(.92)}
@@ -200,7 +200,19 @@ button:disabled{cursor:not-allowed}
 .task-meta{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:12.5px;color:var(--ink-3);margin-top:2px}
 .xp-chip{font-family:var(--font-mono);font-weight:700;font-size:11.5px;color:var(--accent-text);background:var(--accent-soft);padding:1px 7px;border-radius:999px}
 .st-done .xp-chip{color:var(--done);background:var(--done-soft)}
-.task-reason{margin-top:4px;font-size:13px;color:var(--miss);font-weight:600;overflow-wrap:anywhere}
+.task-reason{display:block;margin-top:4px;font-size:13px;color:var(--miss);font-weight:600;overflow-wrap:anywhere}
+.task-open{display:block;width:calc(100% + 12px);min-width:0;margin:-6px -6px;padding:6px;text-align:left;background:none;border:0;border-radius:var(--r-sm)}
+.task-open:hover{background:var(--surface-2)}
+.task-open .task-name,.task-open .task-meta{display:block}
+.task-open .task-meta{display:flex}
+.chev{width:13px;height:13px;margin-left:6px;vertical-align:-1px;color:var(--ink-3);transition:transform .15s ease}
+.task-open[aria-expanded="true"] .chev{transform:rotate(90deg);color:var(--accent-text)}
+.task.is-open{background:var(--surface-2)}
+.task.is-open .task-open:hover{background:var(--line-2)}
+.prog{font-family:var(--font-mono);font-size:11.5px;font-weight:700;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-2);padding:0 7px;border-radius:999px}
+.st-done .prog{color:var(--done);background:var(--done-soft);border-color:transparent}
+.mini-bar{display:block;height:4px;max-width:240px;margin-top:7px;border-radius:999px;background:var(--line);overflow:hidden}
+.mini-bar span{display:block;height:100%;border-radius:999px;background:var(--done)}
 .task-reason span{color:var(--ink-2);font-weight:500}
 .btn-miss{border:1px solid var(--line);background:transparent;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;color:var(--ink-2);white-space:nowrap}
 .btn-miss:hover:not(:disabled){border-color:var(--miss);color:var(--miss)}
@@ -218,8 +230,49 @@ button:disabled{cursor:not-allowed}
 .reason-err{margin:8px 0 0;font-size:12.5px;color:var(--miss);font-weight:600}
 .reason-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 
-input[type="text"]{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;width:100%}
-input[type="text"]:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+/* Task details: log sets / entries */
+.detail-box{padding:14px 16px 16px;background:var(--surface-2);border-top:1px dashed var(--line)}
+.task + .detail-box{border-top:0}
+.dt-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
+.dt-total{display:flex;align-items:baseline;gap:6px}
+.dt-total b{font-family:var(--font-display);font-weight:800;font-size:36px;line-height:1;font-variant-numeric:tabular-nums}
+.dt-total span{font-size:14px;font-weight:700;color:var(--ink-2)}
+.dt-left{font-size:13px;font-weight:800;color:var(--accent-text)}
+.dt-left.hit{color:var(--done)}
+.dt-bar{height:10px;margin-top:8px;border-radius:999px;background:var(--line);overflow:hidden}
+.dt-bar span{display:block;height:100%;border-radius:999px;background:var(--done)}
+.dt-add{display:grid;grid-template-columns:minmax(120px,180px) minmax(0,1fr) auto;gap:8px;align-items:center;margin-top:14px}
+.dt-amt{display:flex;align-items:center;gap:8px;min-width:0}
+.dt-amt input{min-width:0}
+.dt-amt span{font-size:13px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+.dt-quick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+.dt-quick small{font-size:12px;font-weight:700;color:var(--ink-3);margin-right:2px}
+.qchip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-family:var(--font-mono);font-size:12.5px;font-weight:700}
+.qchip:hover{border-color:var(--done);color:var(--done)}
+.qchip.finish{border-color:var(--done);color:var(--done);background:var(--done-soft)}
+.dt-hint{margin:12px 0 0;font-size:13px;color:var(--ink-2);max-width:62ch}
+.dt-list{list-style:none;margin:14px 0 0;padding:0;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);overflow:hidden}
+.dt-list li{display:grid;grid-template-columns:72px auto 76px minmax(0,1fr) 30px;gap:10px;align-items:center;padding:6px 6px 6px 12px;font-size:13.5px}
+.dt-list li + li{border-top:1px solid var(--line-2)}
+.dt-n{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+.dt-v{font-family:var(--font-mono);font-weight:700;white-space:nowrap}
+.dt-time{font-size:12px;color:var(--ink-3);white-space:nowrap}
+.dt-note{color:var(--ink-2);overflow-wrap:anywhere}
+.dt-del{width:30px;height:30px;border-radius:999px;border:1px solid transparent;background:none;color:var(--ink-3);font-size:18px;line-height:1;display:grid;place-items:center}
+.dt-del:hover{border-color:var(--miss);color:var(--miss)}
+.dt-foot{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.dt-foot .btn{margin-left:auto}
+@media (max-width:560px){
+  .dt-add{grid-template-columns:minmax(0,1fr) auto}
+  .dt-add #log-note{grid-column:1 / -1;grid-row:2}
+  .dt-list li{grid-template-columns:auto minmax(0,1fr) auto 30px;gap:4px 10px}
+  .dt-note{grid-column:1 / -1;grid-row:2;font-size:13px}
+  .dt-note:empty{display:none}
+}
+.goal-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px}
+
+input[type="text"],input[type="number"]{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;width:100%}
+input[type="text"]:focus,input[type="number"]:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
 
 .add-row{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
 
@@ -495,14 +548,14 @@ const RANKS = [
 const BONUS = {checkin:1, perfect:3, streakPer:1, streakCap:5, strong:0.8, missMult:2};
 const STARTERS = [
   {name:'Gym session', cat:'fitness', diff:3, target:'1 hour'},
-  {name:'Run', cat:'fitness', diff:2, target:'3 km'},
-  {name:'Push-ups', cat:'fitness', diff:2, target:'50 reps'},
+  {name:'Run', cat:'fitness', diff:2, target:'', goal:3, unit:'km'},
+  {name:'Push-ups', cat:'fitness', diff:2, target:'', goal:100, unit:'reps'},
   {name:'Eat healthy', cat:'health', diff:2, target:'No junk food'},
-  {name:'Steps', cat:'health', diff:1, target:'10,000 steps'},
-  {name:'Drink water', cat:'health', diff:1, target:'2 litres'},
-  {name:'Deep work', cat:'work', diff:3, target:'2 focused hours'},
+  {name:'Steps', cat:'health', diff:1, target:'', goal:10000, unit:'steps'},
+  {name:'Drink water', cat:'health', diff:1, target:'', goal:8, unit:'glasses'},
+  {name:'Deep work', cat:'work', diff:3, target:'', goal:2, unit:'hours'},
   {name:'Plan tomorrow', cat:'work', diff:1, target:'Top 3 priorities'},
-  {name:'Read', cat:'mind', diff:1, target:'20 minutes'}
+  {name:'Read', cat:'mind', diff:1, target:'', goal:20, unit:'min'}
 ];
 const VIEWS = ['today','history','tasks','ranks','sync'];
 const LS_KEY = 'levelup.v1';
@@ -531,6 +584,11 @@ const reasonLabel = id => (REASONS.find(r => r.id === id) || {label:'Other'}).la
 const newId = () => 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 const sx = n => (n < 0 ? '−' : '+') + nf(Math.abs(n));
+const fmtN = n => Number(n).toLocaleString('en-US', {maximumFractionDigits: 2});
+const goalText = t => t.goal ? 'Goal ' + fmtN(t.goal) + (t.unit ? ' ' + t.unit : '') : '';
+const sumLogs = list => Math.round((list || []).reduce((s, e) => s + (e.n || 0), 0) * 100) / 100;
+const nowHM = () => { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const time12 = t => { const p = t.split(':').map(Number); return ((p[0] % 12) || 12) + ':' + pad(p[1]) + (p[0] < 12 ? ' AM' : ' PM'); };
 const missCost = t => DIFF[t.diff].xp * BONUS.missMult;
 
 const ICON = {
@@ -538,17 +596,19 @@ const ICON = {
   x: '<svg class="x" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
   left: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   right: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  chev: '<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   flame: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5c.4 2.2 3.8 3.9 3.8 7.6A3.8 3.8 0 0 1 8 13a3.8 3.8 0 0 1-3.8-3.9c0-1.6.8-2.7 1.6-3.5.1 1.2.7 2 1.4 2.2C6.9 5.6 7.4 3.4 8 1.5z" fill="var(--accent)"/></svg>'
 };
 
 /* ---------- State ---------- */
-function blankForm(){ return {id:null, name:'', target:'', cat:'fitness', diff:2, days:[0,1,2,3,4,5,6], once:false, onceDate:null}; }
+function blankForm(){ return {id:null, name:'', target:'', goal:'', unit:'', cat:'fitness', diff:2, days:[0,1,2,3,4,5,6], once:false, onceDate:null}; }
 const S = {
   mode:'loading', loaded:false, slow:false, readOnly:false, loadError:false,
   tasks:[], days:{},
   view:'today',
   selDate: todayStr(), lastToday: todayStr(),
   openReason:null, reasonNote:'', reasonErr:'',
+  openDetail:null, logAmount:'', logNote:'', logErr:'', goalErr:'',
   starter: new Set([0,2,3,4,6]),
   form: blankForm(), formErr:'',
   confirmRemove:null,
@@ -571,7 +631,9 @@ function normTasks(doc){
     days: Array.isArray(t.days) ? t.days.filter(x => Number.isInteger(x) && x >= 0 && x < 7) : [0,1,2,3,4,5,6],
     start: isDate(t.start) ? t.start : (isDate(t.once) ? t.once : today),
     end: isDate(t.end) ? t.end : null,
-    once: isDate(t.once) ? t.once : null
+    once: isDate(t.once) ? t.once : null,
+    goal: typeof t.goal === 'number' && isFinite(t.goal) && t.goal > 0 && t.goal <= 1e6 ? t.goal : null,
+    unit: typeof t.unit === 'string' ? t.unit.slice(0, 20) : ''
   }));
 }
 function normDay(date, d){
@@ -579,7 +641,7 @@ function normDay(date, d){
   if (d && d.marks && typeof d.marks === 'object') {
     Object.keys(d.marks).forEach(k => {
       const m = d.marks[k];
-      if (m && m.s === 'done') marks[k] = {s:'done'};
+      if (m && m.s === 'done') marks[k] = m.auto ? {s:'done', auto:true} : {s:'done'};
       else if (m && m.s === 'miss') {
         const o = {s:'miss', r: REASONS.some(r => r.id === m.r) ? m.r : 'other'};
         if (typeof m.note === 'string' && m.note) o.note = m.note.slice(0, 120);
@@ -587,7 +649,22 @@ function normDay(date, d){
       }
     });
   }
-  return {date, plan: d && Array.isArray(d.plan) ? d.plan.filter(x => typeof x === 'string') : null, marks};
+  // Sets / entries logged inside a task: logs[taskId] = [{n, t, note}]
+  const logs = {};
+  if (d && d.logs && typeof d.logs === 'object') {
+    Object.keys(d.logs).forEach(k => {
+      const list = (Array.isArray(d.logs[k]) ? d.logs[k] : []).slice(0, 200).map(e => {
+        if (!e || typeof e !== 'object') return null;
+        const o = {};
+        if (typeof e.n === 'number' && isFinite(e.n) && e.n > 0 && e.n <= 1e6) o.n = e.n;
+        if (typeof e.t === 'string' && /^\d{2}:\d{2}$/.test(e.t)) o.t = e.t;
+        if (typeof e.note === 'string' && e.note) o.note = e.note.slice(0, 120);
+        return (o.n != null || o.note) ? o : null;
+      }).filter(Boolean);
+      if (list.length) logs[k] = list;
+    });
+  }
+  return {date, plan: d && Array.isArray(d.plan) ? d.plan.filter(x => typeof x === 'string') : null, marks, logs};
 }
 const taskById = id => S.tasks.find(t => t.id === id);
 
@@ -818,7 +895,7 @@ function ago(ts){
 function docBody(id){
   if (id === 'tasks') return {list: S.tasks};
   const d = id.slice(2), day = S.days[d];
-  return day ? {date:d, plan:day.plan, marks:day.marks} : null;
+  return day ? {date:d, plan:day.plan, marks:day.marks, logs:day.logs || {}} : null;
 }
 function applyRemote(rows, replace){
   const remote = {};
@@ -961,16 +1038,88 @@ async function boot(){
 }
 
 /* ---------- Mutations ---------- */
+function writeDay(date, fn){
+  const prev = S.days[date] || {date, plan:null, marks:{}, logs:{}};
+  const day = {date, plan: scheduledIds(date), marks: Object.assign({}, prev.marks), logs: Object.assign({}, prev.logs || {})};
+  fn(day);
+  S.days[date] = day;
+  saveDoc('d-' + date, JSON.parse(JSON.stringify(day)));
+}
 function setMark(date, taskId, mark){
-  const prev = S.days[date] || {date, plan:null, marks:{}};
-  const marks = Object.assign({}, prev.marks);
-  if (mark) marks[taskId] = mark; else delete marks[taskId];
-  const body = {date, plan: scheduledIds(date), marks};
-  S.days[date] = body;
-  saveDoc('d-' + date, JSON.parse(JSON.stringify(body)));
+  writeDay(date, day => { if (mark) day.marks[taskId] = mark; else delete day.marks[taskId]; });
+}
+function logAdd(id, amountStr, noteStr){
+  const d = S.selDate, t = taskById(id);
+  if (!t || S.readOnly || d > todayStr()) return;
+  const raw = String(amountStr == null ? '' : amountStr).trim();
+  const note = String(noteStr || '').trim().slice(0, 120);
+  let n = null;
+  if (raw) {
+    n = Number(raw);
+    if (!isFinite(n) || n <= 0 || n > 1e6) { S.logErr = 'Enter how many you did, like 12.'; render(); focusSel('#log-amount'); return; }
+    n = Math.round(n * 100) / 100;
+  } else if (t.goal || !note) {
+    S.logErr = t.goal ? 'Enter how many you did, like 12.' : 'Enter an amount or a note.';
+    render(); focusSel('#log-amount'); return;
+  }
+  const before = S.days[d] && S.days[d].marks[id];
+  const wasDone = !!(before && before.s === 'done');
+  const btn = document.querySelector('[data-key="log-add"]');
+  const rect = btn ? btn.getBoundingClientRect() : null;
+  S.logErr = ''; S.logNote = '';
+  if (n != null) S.logAmount = String(n); // ready for the next set
+  act(() => writeDay(d, day => {
+    const list = (day.logs[id] || []).slice(-199);
+    const e = {t: nowHM()};
+    if (n != null) e.n = n;
+    if (note) e.note = note;
+    list.push(e);
+    day.logs[id] = list;
+    const m = day.marks[id];
+    if (t.goal && sumLogs(list) >= t.goal && !(m && m.s === 'done')) day.marks[id] = {s:'done', auto:true};
+  }), {date:d});
+  const after = S.days[d].marks[id];
+  if (!wasDone && after && after.s === 'done') {
+    toast('Goal hit. ' + t.name + ' is done: +' + DIFF[t.diff].xp + ' XP');
+    if (rect) floatXP(rect, '+' + DIFF[t.diff].xp + ' XP');
+  }
+  focusSel('#log-amount');
+}
+function logDel(id, i){
+  const d = S.selDate, t = taskById(id);
+  if (!t || S.readOnly || d > todayStr()) return;
+  act(() => writeDay(d, day => {
+    const list = (day.logs[id] || []).slice();
+    list.splice(i, 1);
+    if (list.length) day.logs[id] = list; else delete day.logs[id];
+    const m = day.marks[id];
+    // A tick the goal added by itself goes away if the sets drop below the goal again.
+    if (t.goal && m && m.s === 'done' && m.auto && sumLogs(list) < t.goal) delete day.marks[id];
+  }), {date:d});
+}
+function lastAmounts(id){
+  const seen = [];
+  const dates = Object.keys(S.days).sort().reverse().slice(0, 30);
+  for (const d of dates) {
+    const l = (S.days[d].logs || {})[id] || [];
+    for (let i = l.length - 1; i >= 0 && seen.length < 3; i--) if (l[i].n != null && !seen.includes(l[i].n)) seen.push(l[i].n);
+    if (seen.length >= 3) break;
+  }
+  return seen;
+}
+function quickAmounts(t){
+  // Your recent amounts first, topped up with sensible defaults for the goal.
+  const out = lastAmounts(t.id), g = t.goal;
+  const base = !g ? [] : g <= 10 ? [1, 2] : g <= 50 ? [5, 10] : g <= 300 ? [10, 12, 15, 20] : [Math.round(g / 10), Math.round(g / 4), Math.round(g / 2)];
+  base.forEach(n => { if (out.length < 5 && n > 0 && !out.includes(n)) out.push(n); });
+  return out.sort((a, b) => a - b);
+}
+function focusSel(sel){
+  if (window.matchMedia && matchMedia('(pointer: coarse)').matches) return; // don't pop the phone keyboard
+  const el = $(sel); if (el) el.focus({preventScroll:true});
 }
 function saveTasks(){ saveDoc('tasks', {list: JSON.parse(JSON.stringify(S.tasks))}); }
-function hasMarks(id){ return Object.keys(S.days).some(d => S.days[d].marks && S.days[d].marks[id]); }
+function hasMarks(id){ return Object.keys(S.days).some(d => (S.days[d].marks && S.days[d].marks[id]) || (S.days[d].logs && S.days[d].logs[id])); }
 
 function act(fn, opts){
   const before = S.calc || computeAll();
@@ -1209,7 +1358,14 @@ function rowHTML(t, m, future){
   if (future) side = '<span class="lock">Not yet</span>';
   else if (state === 'pending') side = `<button type="button" class="btn-miss" data-action="open-reason" data-id="${t.id}" data-key="miss-${t.id}" ${ro ? 'disabled' : ''}>Didn’t do it</button>`;
   else if (state === 'miss') side = `<button type="button" class="btn-miss" data-action="open-reason" data-id="${t.id}" data-key="miss-${t.id}" ${ro ? 'disabled' : ''}>Change</button>`;
-  const reason = state === 'miss' ? `<div class="task-reason">Missed: ${esc(reasonLabel(m.r))} · −${missCost(t)} XP${m.note ? ' <span>“' + esc(m.note) + '”</span>' : ''}</div>` : '';
+  const reason = state === 'miss' ? `<span class="task-reason">Missed: ${esc(reasonLabel(m.r))} · −${missCost(t)} XP${m.note ? ' <span>“' + esc(m.note) + '”</span>' : ''}</span>` : '';
+  const det = S.openDetail === t.id;
+  const logs = ((S.days[S.selDate] && S.days[S.selDate].logs) || {})[t.id] || [];
+  const total = sumLogs(logs);
+  const pct = t.goal ? Math.min(100, Math.round(total / t.goal * 100)) : 0;
+  let prog = '';
+  if (t.goal) prog = `<span class="prog">${fmtN(total)}/${fmtN(t.goal)}${t.unit ? ' ' + esc(t.unit) : ''}</span>`;
+  else if (logs.length) prog = `<span class="prog">${logs.length === 1 ? '1 entry' : logs.length + ' entries'}</span>`;
   let box = '';
   if (open) {
     const cur = m && m.s === 'miss' ? m.r : null;
@@ -1224,15 +1380,72 @@ function rowHTML(t, m, future){
       </div>
     </div>`;
   }
-  return `<div class="task st-${state}">
+  return `<div class="task st-${state}${det ? ' is-open' : ''}">
     <button type="button" class="tick" data-action="tick" data-id="${t.id}" data-key="tick-${t.id}" aria-pressed="${state === 'done'}" aria-label="${esc(label)}" ${ro ? 'disabled' : ''}>${ICON.check}${ICON.x}</button>
-    <div class="task-main">
-      <div class="task-name">${esc(t.name)}</div>
-      <div class="task-meta">${t.target ? '<span>' + esc(t.target) + '</span>' : ''}<span>${DIFF[t.diff].label}</span><span class="xp-chip">+${DIFF[t.diff].xp} XP</span>${state === 'pending' ? `<span class="miss-chip">miss −${missCost(t)}</span>` : ''}</div>
+    <button type="button" class="task-main task-open" data-action="open-detail" data-id="${t.id}" data-key="open-${t.id}" aria-expanded="${det}" title="${det ? 'Close details' : 'Open to log sets and details'}">
+      <span class="task-name">${esc(t.name)}${ICON.chev}</span>
+      <span class="task-meta">${prog}${t.target ? '<span>' + esc(t.target) + '</span>' : ''}<span>${DIFF[t.diff].label}</span><span class="xp-chip">+${DIFF[t.diff].xp} XP</span>${state === 'pending' ? `<span class="miss-chip">miss −${missCost(t)}</span>` : ''}</span>
+      ${t.goal && total > 0 && !det ? `<span class="mini-bar" aria-hidden="true"><span style="width:${pct}%"></span></span>` : ''}
       ${reason}
-    </div>
+    </button>
     <div class="task-side">${side}</div>
-  </div>${box}`;
+  </div>${box}${det ? detailHTML(t, logs, ro, future) : ''}`;
+}
+
+function detailHTML(t, logs, ro, future){
+  const total = sumLogs(logs), g = t.goal, unit = t.unit || '';
+  const u = unit ? ' ' + esc(unit) : '';
+  const word = !unit || /^(reps?|sets?)$/i.test(unit) ? 'Set' : 'Entry';
+  const left = g ? Math.max(0, Math.round((g - total) * 100) / 100) : 0;
+  let head;
+  if (g) {
+    const pct = Math.min(100, Math.round(total / g * 100));
+    head = `<div class="dt-head">
+        <div class="dt-total"><b>${fmtN(total)}</b><span>/ ${fmtN(g)}${u}</span></div>
+        <div class="dt-left ${left ? '' : 'hit'}">${left ? fmtN(left) + u + ' to go' : 'Goal hit'}</div>
+      </div>
+      <div class="dt-bar" role="progressbar" aria-label="${esc(t.name)} progress" aria-valuemin="0" aria-valuemax="${g}" aria-valuenow="${Math.min(total, g)}"><span style="width:${pct}%"></span></div>`;
+  } else {
+    head = `<div class="dt-head">
+        <div class="dt-total"><b>${logs.length}</b><span>${logs.length === 1 ? 'entry' : 'entries'} logged</span></div>
+        ${total ? `<div class="dt-left">Total ${fmtN(total)}${u}</div>` : ''}
+      </div>`;
+  }
+  let add = '';
+  if (!ro) {
+    const quick = quickAmounts(t);
+    add = `<div class="dt-add">
+        <div class="dt-amt"><input id="log-amount" type="number" inputmode="decimal" min="0" step="any" placeholder="${g ? 'How many?' : 'Amount'}" value="${esc(S.logAmount)}" data-key="log-amount" aria-label="How many${unit ? ' ' + esc(unit) : ''}">${unit ? `<span>${esc(unit)}</span>` : ''}</div>
+        <input id="log-note" type="text" maxlength="120" placeholder="Note (optional)" value="${esc(S.logNote)}" autocomplete="off" data-key="log-note" aria-label="Note for this ${word.toLowerCase()}">
+        <button type="button" class="btn primary small" data-action="log-add" data-id="${t.id}" data-key="log-add">Add ${word.toLowerCase()}</button>
+      </div>
+      ${quick.length || (left && total) ? `<div class="dt-quick"><small>Quick add</small>${quick.map(n => `<button type="button" class="qchip" data-action="log-quick" data-id="${t.id}" data-n="${n}" data-key="lq-${n}">+${fmtN(n)}</button>`).join('')}${left && total && !quick.includes(left) ? `<button type="button" class="qchip finish" data-action="log-quick" data-id="${t.id}" data-n="${left}" data-key="lq-finish">Finish +${fmtN(left)}</button>` : ''}</div>` : ''}
+      ${S.logErr ? `<p class="reason-err" role="alert">${esc(S.logErr)}</p>` : ''}`;
+  }
+  let hint = '';
+  if (!logs.length) {
+    if (future) hint = 'You can log this when the day comes.';
+    else if (ro) hint = 'Nothing logged.';
+    else if (g) hint = `Each time you finish a ${word.toLowerCase()}, type how many you did and press Add ${word.toLowerCase()}. ${t.name} ticks itself when you reach ${fmtN(g)}${unit ? ' ' + unit : ''}.`;
+    else hint = 'Log what you did: an amount, a note, or both. Set a daily goal and the task ticks itself when you reach it.';
+  }
+  const list = logs.length ? `<ol class="dt-list" aria-label="${esc(t.name)} log">${logs.map((e, i) => `<li>
+        <span class="dt-n">${word} ${i + 1}</span>
+        <span class="dt-v">${e.n != null ? fmtN(e.n) + u : '–'}</span>
+        <span class="dt-time">${e.t ? time12(e.t) : ''}</span>
+        <span class="dt-note">${e.note ? esc(e.note) : ''}</span>
+        ${ro ? '<span></span>' : `<button type="button" class="dt-del" data-action="log-del" data-id="${t.id}" data-i="${i}" data-key="ld-${t.id}-${i}" aria-label="Remove ${word.toLowerCase()} ${i + 1}">×</button>`}
+      </li>`).join('')}</ol>` : '';
+  return `<div class="detail-box" role="region" aria-label="${esc(t.name)} details">
+      ${head}
+      ${add}
+      ${hint ? `<p class="dt-hint">${esc(hint)}</p>` : ''}
+      ${list}
+      <div class="dt-foot">
+        ${S.readOnly ? '' : `<button type="button" class="link" data-action="goal-edit" data-id="${t.id}" data-key="goal-edit">${g ? 'Change goal' : 'Set a daily goal'}</button>`}
+        <button type="button" class="btn small ghost" data-action="close-detail" data-id="${t.id}" data-key="close-detail">Close</button>
+      </div>
+    </div>`;
 }
 
 function onboardHTML(){
@@ -1244,7 +1457,7 @@ function onboardHTML(){
       const on = S.starter.has(i);
       return `<button type="button" class="starter ${on ? 'on' : ''}" aria-pressed="${on}" data-action="starter" data-i="${i}" data-key="starter-${i}">
         <span class="box">${ICON.check}</span>
-        <span><b>${esc(s.name)}</b><small>${esc(catLabel(s.cat))} · ${esc(s.target)} · +${DIFF[s.diff].xp} XP</small></span>
+        <span><b>${esc(s.name)}</b><small>${esc(catLabel(s.cat))} · ${esc(goalText(s) || s.target)} · +${DIFF[s.diff].xp} XP</small></span>
       </button>`;
     }).join('')}</div>
     <div class="add-row">
@@ -1343,7 +1556,15 @@ function tasksHTML(){
     </div>
     <div class="field">
       <label for="tf-target">Target <span class="opt">optional</span></label>
-      <input id="tf-target" type="text" maxlength="60" placeholder="e.g. 50 reps, 10,000 steps, 2 hours" value="${esc(f.target)}" autocomplete="off" data-key="tf-target">
+      <input id="tf-target" type="text" maxlength="60" placeholder="e.g. No junk food, Top 3 priorities" value="${esc(f.target)}" autocomplete="off" data-key="tf-target">
+    </div>
+    <div class="field">
+      <label for="tf-goal">Daily goal <span class="opt">optional, lets you log each set</span></label>
+      <div class="goal-row">
+        <input id="tf-goal" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 100" value="${esc(f.goal)}" data-key="tf-goal">
+        <input id="tf-unit" type="text" maxlength="20" placeholder="reps, steps, km, min" value="${esc(f.unit)}" autocomplete="off" data-key="tf-unit" aria-label="Unit for the daily goal">
+      </div>
+      ${S.goalErr ? `<p class="field-err" role="alert">${esc(S.goalErr)}</p>` : ''}
     </div>
     <div class="field"><span class="label" id="lbl-cat">Category</span>
       <div class="seg" role="group" aria-labelledby="lbl-cat">${CATS.map(c => `<button type="button" class="chip ${f.cat === c.id ? 'on' : ''}" aria-pressed="${f.cat === c.id}" data-action="f-cat" data-v="${c.id}" data-key="f-cat-${c.id}">${esc(c.label)}</button>`).join('')}</div>
@@ -1375,7 +1596,7 @@ function tasksHTML(){
     return `<div class="tl-group"><h3 class="eyebrow">${esc(c.label)}</h3><ul class="tl-list">${list.map(t => {
       const armed = S.confirmRemove === t.id;
       return `<li class="tl-item ${S.form.id === t.id ? 'editing' : ''}">
-        <div class="tl-main"><div class="tl-name">${esc(t.name)}</div><div class="tl-meta">${[t.target, daysText(t), DIFF[t.diff].label + ' · +' + DIFF[t.diff].xp + ' XP, miss −' + missCost(t)].filter(Boolean).map(esc).join(' · ')}</div></div>
+        <div class="tl-main"><div class="tl-name">${esc(t.name)}</div><div class="tl-meta">${[goalText(t), t.target, daysText(t), DIFF[t.diff].label + ' · +' + DIFF[t.diff].xp + ' XP, miss −' + missCost(t)].filter(Boolean).map(esc).join(' · ')}</div></div>
         <div class="tl-actions">
           <button type="button" class="btn small ghost" data-action="t-edit" data-id="${t.id}" data-key="edit-${t.id}" ${S.readOnly ? 'disabled' : ''}>Edit</button>
           <button type="button" class="btn small ghost danger ${armed ? 'armed' : ''}" data-action="t-remove" data-id="${t.id}" data-key="rm-${t.id}" ${S.readOnly ? 'disabled' : ''}>${armed ? 'Yes, remove' : 'Remove'}</button>
@@ -1502,10 +1723,10 @@ document.addEventListener('click', e => {
       break;
     case 'copy-code': if (S.sync.code) copyText(showCode(S.sync.code), 'Sync code copied.'); break;
     case 'copy-link': if (S.sync.code) copyText(location.origin + location.pathname + '#sync=' + S.sync.code, 'Link copied. Open it on your other device.'); break;
-    case 'sel-day': S.selDate = el.dataset.date; S.openReason = null; render(); break;
-    case 'week-prev': S.selDate = addDays(S.selDate, -7); S.openReason = null; render(); break;
-    case 'week-next': S.selDate = addDays(S.selDate, 7); S.openReason = null; render(); break;
-    case 'go-today': S.selDate = today; S.openReason = null; render(); break;
+    case 'sel-day': S.selDate = el.dataset.date; S.openReason = null; S.openDetail = null; render(); break;
+    case 'week-prev': S.selDate = addDays(S.selDate, -7); S.openReason = null; S.openDetail = null; render(); break;
+    case 'week-next': S.selDate = addDays(S.selDate, 7); S.openReason = null; S.openDetail = null; render(); break;
+    case 'go-today': S.selDate = today; S.openReason = null; S.openDetail = null; render(); break;
     case 'tick': {
       if (S.readOnly || S.selDate > today) return;
       const d = S.selDate, cur = S.days[d] && S.days[d].marks[id];
@@ -1519,6 +1740,7 @@ document.addEventListener('click', e => {
     case 'open-reason': {
       const cur = S.days[S.selDate] && S.days[S.selDate].marks[id];
       S.openReason = S.openReason === id ? null : id;
+      S.openDetail = null;
       S.reasonNote = cur && cur.note ? cur.note : '';
       S.reasonErr = '';
       render();
@@ -1541,12 +1763,38 @@ document.addEventListener('click', e => {
       break;
     }
     case 'close-reason': S.openReason = null; S.reasonErr = ''; render(); break;
+    case 'open-detail': {
+      const opening = S.openDetail !== id;
+      S.openDetail = opening ? id : null;
+      S.openReason = null; S.reasonErr = '';
+      S.logErr = ''; S.logNote = '';
+      if (opening) { const last = lastAmounts(id)[0]; S.logAmount = last == null ? '' : String(last); }
+      render();
+      if (opening && !S.readOnly && S.selDate <= today) focusSel('#log-amount');
+      break;
+    }
+    case 'close-detail': {
+      S.openDetail = null; S.logErr = ''; render();
+      const o = document.querySelector('[data-key="open-' + id + '"]'); if (o) o.focus({preventScroll:true});
+      break;
+    }
+    case 'log-add': logAdd(id, S.logAmount, S.logNote); break;
+    case 'log-quick': logAdd(id, el.dataset.n, S.logNote); break;
+    case 'log-del': logDel(id, +el.dataset.i); break;
+    case 'goal-edit': {
+      const t = taskById(id); if (!t) return;
+      S.form = {id:t.id, name:t.name, target:t.target, goal: t.goal == null ? '' : String(t.goal), unit: t.unit || '', cat:t.cat, diff:t.diff, days:t.days.slice(), once:false, onceDate:t.once};
+      S.formErr = ''; S.goalErr = ''; S.openDetail = null;
+      go('tasks');
+      setTimeout(() => { const g = $('#tf-goal'); if (g) g.focus(); }, 0);
+      break;
+    }
     case 'clear-mark': { const d = S.selDate; S.openReason = null; act(() => setMark(d, id, null), {date:d}); break; }
     case 'starter': { const i = +el.dataset.i; if (S.starter.has(i)) S.starter.delete(i); else S.starter.add(i); render(); break; }
     case 'start': {
       if (!S.starter.size || S.readOnly) return;
       act(() => {
-        [...S.starter].sort((x, y) => x - y).forEach(i => { const s = STARTERS[i]; S.tasks.push({id:newId(), name:s.name, target:s.target, cat:s.cat, diff:s.diff, days:[0,1,2,3,4,5,6], start:today, end:null, once:null}); });
+        [...S.starter].sort((x, y) => x - y).forEach(i => { const s = STARTERS[i]; S.tasks.push({id:newId(), name:s.name, target:s.target, goal:s.goal || null, unit:s.unit || '', cat:s.cat, diff:s.diff, days:[0,1,2,3,4,5,6], start:today, end:null, once:null}); });
         saveTasks();
       });
       S.selDate = today;
@@ -1554,18 +1802,18 @@ document.addEventListener('click', e => {
       render();
       break;
     }
-    case 'go-add': S.form = blankForm(); S.formErr = ''; go('tasks'); setTimeout(() => { const n = $('#tf-name'); if (n) n.focus(); }, 0); break;
-    case 'open-week': { const ws = el.dataset.date; const tws = weekStart(today); S.selDate = ws === tws ? today : ws; S.openReason = null; go('today'); break; }
+    case 'go-add': S.form = blankForm(); S.formErr = ''; S.goalErr = ''; go('tasks'); setTimeout(() => { const n = $('#tf-name'); if (n) n.focus(); }, 0); break;
+    case 'open-week': { const ws = el.dataset.date; const tws = weekStart(today); S.selDate = ws === tws ? today : ws; S.openReason = null; S.openDetail = null; go('today'); break; }
     case 'more-weeks': S.histLimit += 12; render(); break;
     case 'f-cat': S.form.cat = el.dataset.v; render(); break;
     case 'f-diff': S.form.diff = +el.dataset.v; render(); break;
     case 'f-day': { const i = +el.dataset.v; const ds = S.form.days; S.form.days = ds.includes(i) ? ds.filter(x => x !== i) : ds.concat(i).sort(); render(); break; }
     case 'f-days': S.form.days = el.dataset.v === 'all' ? [0,1,2,3,4,5,6] : el.dataset.v === 'weekdays' ? [0,1,2,3,4] : [5,6]; render(); break;
-    case 'f-cancel': S.form = blankForm(); S.formErr = ''; render(); break;
+    case 'f-cancel': S.form = blankForm(); S.formErr = ''; S.goalErr = ''; render(); break;
     case 't-edit': {
       const t = taskById(id); if (!t) return;
-      S.form = {id:t.id, name:t.name, target:t.target, cat:t.cat, diff:t.diff, days:t.days.slice(), once:false, onceDate:t.once};
-      S.formErr = ''; render(); window.scrollTo({top:0, behavior:'smooth'});
+      S.form = {id:t.id, name:t.name, target:t.target, goal: t.goal == null ? '' : String(t.goal), unit: t.unit || '', cat:t.cat, diff:t.diff, days:t.days.slice(), once:false, onceDate:t.once};
+      S.formErr = ''; S.goalErr = ''; render(); window.scrollTo({top:0, behavior:'smooth'});
       const n = $('#tf-name'); if (n) n.focus({preventScroll:true});
       break;
     }
@@ -1594,6 +1842,10 @@ document.addEventListener('input', e => {
   const t = e.target;
   if (t.id === 'tf-name') { S.form.name = t.value; if (S.formErr && t.value.trim()) { S.formErr = ''; const p = document.querySelector('.field-err'); if (p) p.remove(); } }
   else if (t.id === 'tf-target') S.form.target = t.value;
+  else if (t.id === 'tf-goal') S.form.goal = t.value;
+  else if (t.id === 'tf-unit') S.form.unit = t.value;
+  else if (t.id === 'log-amount') S.logAmount = t.value;
+  else if (t.id === 'log-note') S.logNote = t.value;
   else if (t.id === 'reason-note') S.reasonNote = t.value;
   else if (t.id === 'sync-input') S.syncInput = t.value;
 });
@@ -1602,7 +1854,9 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.id === 'sync-input' && !S.syncBusy) { e.preventDefault(); syncJoin(); return; }
-  if (e.key === 'Escape' && S.openReason) { const id = S.openReason; S.openReason = null; render(); const t = document.querySelector('[data-key="tick-' + id + '"]'); if (t) t.focus(); }
+  if (e.key === 'Enter' && (e.target.id === 'log-amount' || e.target.id === 'log-note') && S.openDetail) { e.preventDefault(); logAdd(S.openDetail, S.logAmount, S.logNote); return; }
+  if (e.key === 'Escape' && S.openReason) { const id = S.openReason; S.openReason = null; render(); const t = document.querySelector('[data-key="tick-' + id + '"]'); if (t) t.focus(); return; }
+  if (e.key === 'Escape' && S.openDetail) { const id = S.openDetail; S.openDetail = null; S.logErr = ''; render(); const o = document.querySelector('[data-key="open-' + id + '"]'); if (o) o.focus(); }
 });
 document.addEventListener('submit', e => {
   if (e.target.id !== 'task-form') return;
@@ -1611,13 +1865,22 @@ document.addEventListener('submit', e => {
   const f = S.form, name = f.name.trim(), today = todayStr();
   if (!name) { S.formErr = 'Give the task a name, like “Push-ups” or “Deep work”.'; render(); const n = $('#tf-name'); if (n) n.focus(); return; }
   if (!f.once && !f.onceDate && !f.days.length) { S.formErr = 'Pick at least one day for it to repeat on.'; render(); return; }
+  const gRaw = String(f.goal == null ? '' : f.goal).trim();
+  let goal = null;
+  if (gRaw) {
+    goal = Number(gRaw);
+    if (!isFinite(goal) || goal <= 0 || goal > 1e6) { S.goalErr = 'Use a number above 0, like 100.'; render(); const g = $('#tf-goal'); if (g) g.focus(); return; }
+    goal = Math.round(goal * 100) / 100;
+  }
+  S.goalErr = '';
+  const unit = goal ? String(f.unit || '').trim().slice(0, 20) : '';
   const isEdit = !!f.id;
   act(() => {
     if (isEdit) {
-      S.tasks = S.tasks.map(t => t.id === f.id ? Object.assign({}, t, {name, target:f.target.trim(), cat:f.cat, diff:f.diff, days: t.once ? t.days : f.days.slice()}) : t);
+      S.tasks = S.tasks.map(t => t.id === f.id ? Object.assign({}, t, {name, target:f.target.trim(), goal, unit, cat:f.cat, diff:f.diff, days: t.once ? t.days : f.days.slice()}) : t);
     } else {
       const once = f.once ? S.selDate : null;
-      S.tasks.push({id:newId(), name, target:f.target.trim(), cat:f.cat, diff:f.diff, days:f.days.slice(), start: once || today, end:null, once});
+      S.tasks.push({id:newId(), name, target:f.target.trim(), goal, unit, cat:f.cat, diff:f.diff, days:f.days.slice(), start: once || today, end:null, once});
     }
     saveTasks();
     S.form = blankForm(); S.formErr = '';

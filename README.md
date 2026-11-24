@@ -7,9 +7,10 @@ A daily progress tracker that works like a game. Add your daily tasks (gym, runn
 ## How it works
 
 - **Today:** tick each task, or press *Didn't do it* and pick a reason (too tired, no time, work overload, sick, forgot, and more).
+- **Log sets:** tap a task's name to open it. Give it a daily goal, like 100 push-ups, then add each set as you finish it (12, 10, 15…). Each set is saved with the time and an optional note, and a progress bar shows how much is left. The task ticks itself when you reach the goal, and un-ticks if you delete a set and drop below it. Tasks without a goal can log notes too.
 - **Week strip:** Monday to Sunday, with a progress ring per day. Tap any day or go back through past weeks.
 - **History:** weekly results, streaks, XP lost to misses, your most common reasons for missing, and each task's hit rate over the last 30 days.
-- **Tasks:** add tasks by category (Fitness, Health, Work, Mind, Other) with a target, difficulty and repeat days, or for one day only.
+- **Tasks:** add tasks by category (Fitness, Health, Work, Mind, Other) with a target, an optional daily goal (a number and a unit, like 100 reps or 10,000 steps), difficulty and repeat days, or for one day only.
 - **Ranks:** 12 levels from Top 100% (Starter) to Top 1% (Legend).
 
 ## XP rules
