@@ -8,7 +8,7 @@ A daily progress tracker that works like a game. Add your daily tasks (gym, runn
 
 - **Today:** tick each task, or press *Didn't do it* and pick a reason (too tired, no time, work overload, sick, forgot, and more).
 - **Log sets:** tap a task's name to open it. Give it a daily goal, like 100 push-ups, then add each set as you finish it (12, 10, 15…). Each set is saved with the time and an optional note, and a progress bar shows how much is left. The task ticks itself when you reach the goal, and un-ticks if you delete a set and drop below it. Tasks without a goal can log notes too.
-- **Wins:** at the end of each day, write the best things you did that day ("Finished the report early", "Called my parents"). Add them under your tasks on the Today screen, or in the **Wins** tab. The Wins tab shows which days this week you wrote something, how many days in a row, and every past day's wins, newest first and grouped by week. Tap a past day to open it and add more.
+- **Wins:** at the end of each day, write the best things you did that day ("Finished the report early", "Called my parents"). Add them under your tasks on the Today screen, or in the **Wins** tab. Writing at least one win earns +1 XP for that day. The Wins tab shows which days this week you wrote something, how many days in a row, and every past day's wins, newest first and grouped by week. Tap a past day to open it and add more.
 - **Week strip:** Monday to Sunday, with a progress ring per day. Tap any day or go back through past weeks.
 - **History:** weekly results, streaks, XP lost to misses, your most common reasons for missing, and each task's hit rate over the last 30 days.
 - **Tasks:** add tasks by category (Fitness, Health, Work, Mind, Other) with a target, an optional daily goal (a number and a unit, like 100 reps or 10,000 steps), difficulty and repeat days, or for one day only.
@@ -24,6 +24,7 @@ A daily progress tracker that works like a game. Add your daily tasks (gym, runn
 | Every task answered that day | +1 |
 | Perfect day (every task done) | +3 |
 | Streak day (80% or more done) | +1 per day in the streak, max +5 |
+| Wrote at least one win for the day | +1 |
 
 XP never goes below 0, but it can drop, and your rank can drop with it.
 

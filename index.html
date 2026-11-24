@@ -273,6 +273,8 @@ button:disabled{cursor:not-allowed}
 .wins-sec{margin-top:24px}
 .wins-sec .group-head{align-items:center;gap:10px}
 .wins-sec .group-head .eyebrow{color:var(--accent-text)}
+.wins-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.xp-chip.won{color:var(--done);background:var(--done-soft)}
 .wins-box{border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--surface);padding:6px 14px 14px}
 .wins-box.plain{border:0;padding:0;background:transparent}
 .win-list{list-style:none;margin:0;padding:0}
@@ -591,7 +593,7 @@ const RANKS = [
   {pct:1, title:'Legend', xp:2800}
 ];
 // A missed task (or one left unanswered when the day ends) costs missMult x what it is worth.
-const BONUS = {checkin:1, perfect:3, streakPer:1, streakCap:5, strong:0.8, missMult:2};
+const BONUS = {checkin:1, perfect:3, streakPer:1, streakCap:5, strong:0.8, missMult:2, wins:1};
 const STARTERS = [
   {name:'Gym session', cat:'fitness', diff:3, target:'1 hour'},
   {name:'Run', cat:'fitness', diff:2, target:'', goal:3, unit:'km'},
@@ -755,7 +757,7 @@ function dayStats(d){
   const n = ids.length;
   return {ids, n, done, miss, pending, taskXp, missXp, pendXp, penalty:0, ratio: n ? done / n : 0,
     checkedIn: n > 0 && pending === 0, perfect: n > 0 && done === n,
-    bonus:{check:0, perfect:0, streak:0}, xp:0, streakAt:0};
+    bonus:{check:0, perfect:0, streak:0, wins:0}, xp:0, streakAt:0};
 }
 function computeAll(){
   const today = todayStr();
@@ -783,7 +785,9 @@ function computeAll(){
       }
       nAll += st.n; doneAll += st.done;
     }
-    st.xp = st.taskXp + st.bonus.check + st.bonus.perfect + st.bonus.streak - st.penalty;
+    // Writing at least one win for the day earns a flat bonus, tasks or not.
+    if (winsOf(d).length) st.bonus.wins = BONUS.wins;
+    st.xp = st.taskXp + st.bonus.check + st.bonus.perfect + st.bonus.streak + st.bonus.wins - st.penalty;
     st.streakAt = streak;
     total = Math.max(0, total + st.xp);
     perDay[d] = st;
@@ -1316,6 +1320,7 @@ function rulesHTML(){
       <li>Every task answered that day <b>+${BONUS.checkin}</b></li>
       <li>Perfect day, all done <b>+${BONUS.perfect}</b></li>
       <li>Streak day (80%+ done) <b>+${BONUS.streakPer} × streak, max +${BONUS.streakCap}</b></li>
+      <li>Wrote your wins for the day <b>+${BONUS.wins}</b></li>
     </ul>
   </section>`;
 }
@@ -1375,6 +1380,7 @@ function dayHTML(calc){
     if (st.bonus.perfect) parts.push('Perfect +' + st.bonus.perfect);
     if (st.bonus.streak) parts.push('Streak +' + st.bonus.streak);
   }
+  if (!future && st.bonus.wins) parts.push('Wins +' + st.bonus.wins);
   let notice = '';
   if (future && st.n) notice = `<div class="notice calm">This day opens on ${esc(fmt(d, {weekday:'long'}))}. You can see what’s planned, and tick it off when the day comes.</div>`;
   else if (!future && d < today && st.pending) notice = `<div class="notice">This day is over. ${plural(st.pending, 'unanswered task')} counted as missed: <b>−${st.pendXp} XP</b>. Tick what you did and pick a reason for the rest.</div>`;
@@ -1399,7 +1405,7 @@ function dayHTML(calc){
         <h2>${esc(fmt(d, {weekday:'long'}))}, ${esc(fmtShort(d))} ${pill}</h2>
         <p class="day-sum">${esc(sum)}</p>
       </div>
-      ${!future && st.n ? `<div class="day-xp"><div class="big ${st.xp < 0 ? 'neg' : ''}">${sx(st.xp)} XP</div><div class="break">${esc(parts.join(' · '))}</div></div>` : ''}
+      ${!future && (st.n || st.bonus.wins) ? `<div class="day-xp"><div class="big ${st.xp < 0 ? 'neg' : ''}">${sx(st.xp)} XP</div><div class="break">${esc(parts.join(' · '))}</div></div>` : ''}
     </div>
     ${notice}
     ${st.n ? `<div class="groups">${groups}</div>` : `<div class="empty"><b>Nothing scheduled for this day.</b>Take the rest day, or add a one-off task just for ${esc(fmtLong(d))}.</div>`}
@@ -1534,9 +1540,12 @@ function winsBoxHTML(date){
 function winsSecHTML(date){
   const n = winsOf(date).length;
   return `<section class="wins-sec" aria-label="Best things I did">
-    <div class="group-head"><span class="eyebrow">${date === todayStr() ? 'Best things I did today' : 'Best things I did'}${n ? ' · ' + n : ''}</span><a class="link" href="#wins">See past days</a></div>
+    <div class="group-head"><span class="wins-title"><span class="eyebrow">${date === todayStr() ? 'Best things I did today' : 'Best things I did'}${n ? ' · ' + n : ''}</span>${winXpChip(n)}</span><a class="link" href="#wins">See past days</a></div>
     <div class="wins-box">${winsBoxHTML(date)}</div>
   </section>`;
+}
+function winXpChip(n){
+  return n ? `<span class="xp-chip won">+${BONUS.wins} XP earned</span>` : `<span class="xp-chip">+${BONUS.wins} XP</span>`;
 }
 function winAdd(date){
   const today = todayStr();
@@ -1548,15 +1557,19 @@ function winAdd(date){
   S.winDraft = ''; S.winErr = '';
   const w = {text};
   if (date === today) w.t = nowHM();
-  writeDay(date, day => { day.wins.push(w); });
-  render();
-  if (!before && date === today) toast('Saved. That’s your first win today.');
+  const btn = document.querySelector('[data-key="win-add"]');
+  const rect = btn ? btn.getBoundingClientRect() : null;
+  act(() => writeDay(date, day => { day.wins.push(w); }), {date});
+  if (!before) {
+    // The first win of a day is the one that earns the bonus.
+    if (rect) floatXP(rect, '+' + BONUS.wins + ' XP');
+    toast(date === today ? 'First win today: +' + BONUS.wins + ' XP' : 'Win saved: +' + BONUS.wins + ' XP for ' + fmtLong(date));
+  }
   focusSel('#win-input');
 }
 function winDel(date, i){
   if (S.readOnly || !isDate(date) || date > todayStr()) return;
-  writeDay(date, day => { day.wins.splice(i, 1); });
-  render();
+  act(() => writeDay(date, day => { day.wins.splice(i, 1); }), {date});
 }
 function winsHTML(calc){
   const today = todayStr(), ws = weekStart(today);
@@ -1598,8 +1611,8 @@ function winsHTML(calc){
   return `<div class="wins-grid">
     <div class="wins-rail">
       <section class="card wins-today" aria-label="Today’s wins">
-        <h2 class="h2">Today’s wins</h2>
-        <p class="sub">${esc(fmt(today, {weekday:'long', month:'long', day:'numeric'}))}. What were the best things you did today?</p>
+        <div class="wins-title"><h2 class="h2">Today’s wins</h2>${winXpChip(winsOf(today).length)}</div>
+        <p class="sub">${esc(fmt(today, {weekday:'long', month:'long', day:'numeric'}))}. What were the best things you did today? Writing at least one earns +${BONUS.wins} XP.</p>
         <div class="wins-box plain">${winsBoxHTML(today)}</div>
       </section>
       <section class="card wins-stats" aria-label="Wins summary">
