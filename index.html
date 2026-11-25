@@ -337,6 +337,25 @@ input[type="text"]:focus,input[type="number"]:focus,input[type="date"]:focus{out
 .wchip{display:inline-flex;align-items:baseline;gap:6px;padding:3px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line-2);font-family:var(--font-mono);font-size:12px;font-weight:700;white-space:nowrap}
 .wchip small{font-family:var(--font-body);font-size:11px;font-weight:700;color:var(--ink-3)}
 .wd-up,.wd-down{color:var(--ink)}
+.wd-good{color:var(--done)}
+.wd-bad{color:var(--miss)}
+.w-setgoal{margin-top:12px}
+.w-goal{margin-top:12px;max-width:380px}
+.w-goal-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;font-weight:700;color:var(--ink-2)}
+.w-goal-top b{color:var(--ink);font-family:var(--font-mono)}
+.w-goal-top .hit{color:var(--done)}
+.w-goal-bar{height:8px;margin-top:5px;border-radius:999px;background:var(--line);overflow:hidden}
+.w-goal-bar span{display:block;height:100%;min-width:4px;border-radius:999px;background:var(--done)}
+.w-goal small{display:block;margin-top:5px;font-size:12px;color:var(--ink-3)}
+.wc-goal{stroke:var(--done);stroke-width:1.5;stroke-dasharray:6 5}
+.wc-goal-label,.wc-goal-edge{position:absolute;right:2px;font-size:11px;font-weight:800;color:var(--done);background:var(--surface);padding:0 5px;border-radius:4px;line-height:1.5;pointer-events:none}
+.wc-goal-label{transform:translateY(-120%)}
+.wc-goal-edge.top{top:0}
+.wc-goal-edge.bottom{bottom:0}
+.wv-goal{padding:18px 20px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 24px;align-items:end}
+.wv-goal-main .w-now{margin-top:6px}
+.wv-goal-main .w-sub{margin-top:4px}
+@media (max-width:640px){.wv-goal{grid-template-columns:minmax(0,1fr)}}
 .wd-flat{color:var(--ink-3)}
 .w-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:6px}
 .w-form{display:flex;gap:8px;align-items:center}
@@ -740,12 +759,22 @@ const S = {
   histLimit:10,
   winDraft:'', winErr:'', winsLimit:30,
   wDraft:null, wvDraft:null, wvDate:null, wErr:'', wErrAt:'', wRange:'1m', wLimit:30,
+  wGoal:null, wgDraft:null,
   calc:null,
   standalone:false,
   sync:{code:null, status:'off', last:null, dirty:new Set(), err:''},
   syncInput:'', syncErr:'', syncArm:null
 };
 
+// Goal weight lives in the tasks doc: {kg, from (weight when set), set (date)}.
+function normGoal(doc){
+  const g = doc && doc.wGoal, ok = n => typeof n === 'number' && isFinite(n) && n >= W_MIN && n <= W_MAX;
+  if (!g || !ok(g.kg)) return null;
+  const o = {kg: Math.round(g.kg * 10) / 10};
+  if (ok(g.from)) o.from = Math.round(g.from * 10) / 10;
+  if (isDate(g.set)) o.set = g.set;
+  return o;
+}
 function normTasks(doc){
   const list = doc && Array.isArray(doc.list) ? doc.list : [];
   const today = todayStr();
@@ -948,7 +977,7 @@ function writeFailed(e){
   }
 }
 function persistLocal(){
-  try { localStorage.setItem(LS_KEY, JSON.stringify({tasks:{list:S.tasks}, days:S.days})); }
+  try { localStorage.setItem(LS_KEY, JSON.stringify({tasks:{list:S.tasks, wGoal:S.wGoal}, days:S.days})); }
   catch (e) { toast('Couldn’t save in this browser.'); }
 }
 function goLocal(standalone){
@@ -958,6 +987,7 @@ function goLocal(standalone){
     if (raw) {
       const o = JSON.parse(raw);
       S.tasks = normTasks(o.tasks);
+      S.wGoal = normGoal(o.tasks);
       S.days = {};
       Object.keys(o.days || {}).forEach(d => { if (isDate(d)) S.days[d] = normDay(d, o.days[d]); });
     }
@@ -1031,7 +1061,7 @@ function ago(ts){
   return 'at ' + new Date(ts).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
 }
 function docBody(id){
-  if (id === 'tasks') return {list: S.tasks};
+  if (id === 'tasks') return {list: S.tasks, wGoal: S.wGoal};
   const d = id.slice(2), day = S.days[d];
   return day ? {date:d, plan:day.plan, marks:day.marks, logs:day.logs || {}, wins:day.wins || [], weight: day.weight == null ? null : day.weight} : null;
 }
@@ -1040,15 +1070,15 @@ function applyRemote(rows, replace){
   (Array.isArray(rows) ? rows : []).forEach(r => {
     if (r && typeof r.doc_id === 'string' && r.body && typeof r.body === 'object') remote[r.doc_id] = r.body;
   });
-  if (replace) { S.tasks = []; S.days = {}; S.sync.dirty = new Set(); }
+  if (replace) { S.tasks = []; S.days = {}; S.wGoal = null; S.sync.dirty = new Set(); }
   else {
     // Anything only this device has goes up on the next push.
-    if (S.tasks.length && !('tasks' in remote)) S.sync.dirty.add('tasks');
+    if ((S.tasks.length || S.wGoal) && !('tasks' in remote)) S.sync.dirty.add('tasks');
     Object.keys(S.days).forEach(d => { if (!(('d-' + d) in remote)) S.sync.dirty.add('d-' + d); });
   }
   Object.keys(remote).forEach(id => {
     if (S.sync.dirty.has(id)) return; // unsynced local edits win
-    if (id === 'tasks') S.tasks = normTasks(remote[id]);
+    if (id === 'tasks') { S.tasks = normTasks(remote[id]); S.wGoal = normGoal(remote[id]); }
     else if (/^d-\d{4}-\d{2}-\d{2}$/.test(id)) S.days[id.slice(2)] = normDay(id.slice(2), remote[id]);
   });
 }
@@ -1144,6 +1174,7 @@ function onSnap(snap){
     if (id === 'tasks') tasksDoc = b; else days[id.slice(2)] = normDay(id.slice(2), b);
   });
   S.tasks = normTasks(tasksDoc);
+  S.wGoal = normGoal(tasksDoc);
   S.days = days;
   S.loaded = true;
   if (!snap.metadata.fromCache && S.slow) { S.slow = false; hideBanner(); }
@@ -1256,7 +1287,7 @@ function focusSel(sel){
   if (window.matchMedia && matchMedia('(pointer: coarse)').matches) return; // don't pop the phone keyboard
   const el = $(sel); if (el) el.focus({preventScroll:true});
 }
-function saveTasks(){ saveDoc('tasks', {list: JSON.parse(JSON.stringify(S.tasks))}); }
+function saveTasks(){ saveDoc('tasks', {list: JSON.parse(JSON.stringify(S.tasks)), wGoal: S.wGoal ? Object.assign({}, S.wGoal) : null}); }
 function hasMarks(id){ return Object.keys(S.days).some(d => (S.days[d].marks && S.days[d].marks[id]) || (S.days[d].logs && S.days[d].logs[id])); }
 
 function act(fn, opts){
@@ -1724,21 +1755,56 @@ function weightList(){
   return Object.keys(S.days).filter(d => d <= today && S.days[d].weight != null).sort().map(d => ({d, w: S.days[d].weight}));
 }
 function weightOn(list, d){ let r = null; for (const e of list) { if (e.d <= d) r = e; else break; } return r; }
-function deltaText(diff){
+// dir: -1 when the goal is to lose, +1 to gain, 0 with no goal. A move toward the goal is green, away is red.
+function deltaText(diff, dir){
   const v = r1(diff);
   if (!v) return '<span class="wd-flat">No change</span>';
-  return `<span class="wd-${v > 0 ? 'up' : 'down'}"><span aria-hidden="true">${v > 0 ? '▲' : '▼'}</span><span class="vh">${v > 0 ? 'Up' : 'Down'}</span> ${fmtKg(Math.abs(v))} kg</span>`;
+  const tone = dir ? (v * dir > 0 ? ' wd-good' : ' wd-bad') : '';
+  return `<span class="wd-${v > 0 ? 'up' : 'down'}${tone}"><span aria-hidden="true">${v > 0 ? '▲' : '▼'}</span><span class="vh">${v > 0 ? 'Up' : 'Down'}</span> ${fmtKg(Math.abs(v))} kg</span>`;
 }
-function wchip(label, diff){ return `<span class="wchip"><small>${esc(label)}</small>${deltaText(diff)}</span>`; }
-function weightDeltas(list, cur){
+function wchip(label, diff, dir){ return `<span class="wchip"><small>${esc(label)}</small>${deltaText(diff, dir)}</span>`; }
+function weightDeltas(list, cur, dir){
   if (!cur) return '';
   const i = list.indexOf(cur), prev = i > 0 ? list[i - 1] : null;
   const w7 = weightOn(list, addDays(cur.d, -7)), w30 = weightOn(list, addDays(cur.d, -30));
   const out = [];
-  if (prev) out.push(wchip('Since ' + fmtShort(prev.d), cur.w - prev.w));
-  if (w7) out.push(wchip('7 days', cur.w - w7.w));
-  if (w30) out.push(wchip('30 days', cur.w - w30.w));
+  if (prev) out.push(wchip('Since ' + fmtShort(prev.d), cur.w - prev.w, dir));
+  if (w7) out.push(wchip('7 days', cur.w - w7.w, dir));
+  if (w30) out.push(wchip('30 days', cur.w - w30.w, dir));
   return out.length ? `<div class="w-deltas">${out.join('')}</div>` : '';
+}
+function goalInfo(list){
+  const g = S.wGoal;
+  if (!g) return null;
+  const cur = list[list.length - 1] || null;
+  let from = g.from != null ? g.from : null;
+  if (from == null) { const e = list.find(x => !g.set || x.d >= g.set); from = e ? e.w : null; }
+  if (from == null || !cur) return {kg: g.kg, dir: 0, from, cur, left: null, reached: false, pct: 0, eta: null};
+  const dir = g.kg < from ? -1 : g.kg > from ? 1 : 0;
+  const left = r1(Math.abs(g.kg - cur.w));
+  const reached = dir < 0 ? cur.w <= g.kg : dir > 0 ? cur.w >= g.kg : left <= 0.5;
+  const total = Math.abs(g.kg - from), done = dir < 0 ? from - cur.w : cur.w - from;
+  const pct = reached ? 100 : total ? Math.max(0, Math.min(100, Math.round(done / total * 100))) : 0;
+  // A rough finish date from the last 30 days' pace, only when it's heading the right way.
+  let eta = null;
+  const base = weightOn(list, addDays(cur.d, -30)) || list[0];
+  const days = base ? (parse(cur.d) - parse(base.d)) / 864e5 : 0;
+  if (!reached && dir && days >= 7) {
+    const rate = (cur.w - base.w) / days;
+    if (rate * dir > 0.005) { const n = Math.ceil(Math.abs(g.kg - cur.w) / Math.abs(rate)); if (n <= 730) eta = addDays(todayStr(), n); }
+  }
+  return {kg: g.kg, dir, from, cur, left, reached, pct, eta};
+}
+function goalBarHTML(gi){
+  if (!gi) return '';
+  if (!gi.cur) return `<div class="w-goal"><div class="w-goal-top"><span>Goal <b>${fmtKg(gi.kg)} kg</b></span><span>Log your weight to start</span></div></div>`;
+  const verb = gi.dir < 0 ? 'to lose' : gi.dir > 0 ? 'to gain' : 'off target';
+  return `<div class="w-goal">
+    <div class="w-goal-top"><span>Goal <b>${fmtKg(gi.kg)} kg</b></span><span class="${gi.reached ? 'hit' : ''}">${gi.reached ? (gi.dir ? 'Goal reached' : 'On target') : fmtKg(gi.left) + ' kg ' + verb}</span></div>
+    ${gi.dir ? `<div class="w-goal-bar" role="progressbar" aria-label="Progress to goal weight" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${gi.pct}"><span style="width:${gi.pct}%"></span></div>` : ''}
+    ${gi.eta ? `<small>At your 30-day pace, around ${esc(fmt(gi.eta, {month:'short', day:'numeric', year: parse(gi.eta).getFullYear() !== parse(todayStr()).getFullYear() ? 'numeric' : undefined}))}</small>`
+      : !gi.reached && gi.dir ? '<small>Keep logging to see when you’ll get there.</small>' : ''}
+  </div>`;
 }
 function niceStep(raw){
   const p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
@@ -1746,11 +1812,17 @@ function niceStep(raw){
 }
 // Line chart of weight over [from, to]. Lines and grid live in a stretched SVG;
 // dots, labels and the tooltip are HTML positioned in percent, so nothing distorts at any width.
-function weightChartHTML(all, from, to, h){
+function weightChartHTML(all, from, to, h, goal){
   const pts = all.filter(e => e.d >= from && e.d <= to);
   if (pts.length < 2) return `<p class="w-hint">${pts.length ? 'Log one more day to see your trend line.' : 'No weight logged in this period.'}</p>`;
   const t0 = parse(from).getTime(), span = Math.max(1, parse(to).getTime() - t0);
   let lo = Math.min(...pts.map(p => p.w)), hi = Math.max(...pts.map(p => p.w));
+  // Draw the goal inside the chart when it's near the data; a far-off goal would flatten the line, so it gets an edge note instead.
+  let goalIn = false;
+  if (goal != null) {
+    const pad = Math.max(2, (hi - lo) * 1.5);
+    if (goal >= lo - pad && goal <= hi + pad) { lo = Math.min(lo, goal); hi = Math.max(hi, goal); goalIn = true; }
+  }
   const step = niceStep((hi - lo) / 3 || 0.5);
   lo = Math.floor(lo / step + 1e-9) * step; hi = Math.ceil(hi / step - 1e-9) * step;
   if (hi - lo < step * 2) { lo -= step; hi += step; }
@@ -1772,8 +1844,11 @@ function weightChartHTML(all, from, to, h){
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         ${ticks.map(v => `<line class="wc-grid" x1="0" x2="100" y1="${Y(v)}" y2="${Y(v)}" vector-effect="non-scaling-stroke"/>`).join('')}
         <path class="wc-area" d="${area}"/>
+        ${goalIn ? `<line class="wc-goal" x1="0" x2="100" y1="${Y(goal)}" y2="${Y(goal)}" vector-effect="non-scaling-stroke"/>` : ''}
         <path class="wc-line" d="${line}" vector-effect="non-scaling-stroke"/>
       </svg>
+      ${goal == null ? '' : goalIn ? `<span class="wc-goal-label" style="top:${Y(goal)}%">Goal ${fmtKg(goal)}</span>`
+        : `<span class="wc-goal-edge ${goal < lo ? 'bottom' : 'top'}">Goal ${fmtKg(goal)} kg <span aria-hidden="true">${goal < lo ? '↓' : '↑'}</span></span>`}
       ${dots}
       <span class="wc-cross"></span><span class="wc-hdot"></span><div class="wc-tip"></div>
     </div>
@@ -1814,12 +1889,14 @@ function weightCardHTML(){
   let hint = '';
   if (future) hint = 'You can log this day when it comes.';
   else if (dayW == null) hint = d === today ? 'Not logged today yet.' : 'Not logged on this day.';
+  const gi = goalInfo(list);
   return `<section class="card weight-card" aria-label="Weight">
     <div class="w-head"><h2 class="eyebrow">Weight</h2><a class="link" href="#weight">History and chart</a></div>
     <div class="w-body">
       <div class="w-main">
-        ${cur ? `<div class="w-now"><b>${fmtKg(cur.w)}</b><span>kg</span></div><div class="w-sub">${esc(sub)}</div>${weightDeltas(list, cur)}`
+        ${cur ? `<div class="w-now"><b>${fmtKg(cur.w)}</b><span>kg</span></div><div class="w-sub">${esc(sub)}</div>${weightDeltas(list, cur, gi ? gi.dir : 0)}`
           : '<p class="w-empty">Log your weight every day to see if it’s going up or down.</p>'}
+        ${gi ? goalBarHTML(gi) : S.readOnly ? '' : '<button type="button" class="link w-setgoal" data-action="goal-weight" data-key="goal-weight">Set a goal weight</button>'}
       </div>
       <div class="w-side">
         <div class="w-form">
@@ -1830,7 +1907,7 @@ function weightCardHTML(){
         ${S.wErr && S.wErrAt === 'card' ? `<p class="reason-err" role="alert">${esc(S.wErr)}</p>` : ''}
       </div>
     </div>
-    ${list.length ? weightChartHTML(list, addDays(today, -29), today, 92) : ''}
+    ${list.length ? weightChartHTML(list, addDays(today, -29), today, 92, gi ? gi.kg : null) : ''}
   </section>`;
 }
 
@@ -1843,13 +1920,35 @@ function weightHTML(){
   const rg = W_RANGES.find(r => r.id === S.wRange) || W_RANGES[0];
   const from = rg.days ? addDays(today, -(rg.days - 1)) : (list[0] ? list[0].d : today);
   const pts = list.filter(e => e.d >= from);
+  const gi = goalInfo(list), dir = gi ? gi.dir : 0;
+  const gval = S.wgDraft != null ? S.wgDraft : gi ? String(gi.kg) : '';
+  let goalText = 'Set a goal weight to see how far you have to go, color your changes green or red, and get a rough date for when you’ll get there.';
+  if (gi && gi.cur && gi.from != null) {
+    goalText = gi.dir < 0 ? `Losing from ${fmtKg(gi.from)} kg to ${fmtKg(gi.kg)} kg. Going down is good, going up is not.`
+      : gi.dir > 0 ? `Gaining from ${fmtKg(gi.from)} kg to ${fmtKg(gi.kg)} kg. Going up is good, going down is not.`
+      : `Staying at ${fmtKg(gi.kg)} kg, within 0.5 kg either way.`;
+  } else if (gi) goalText = 'Log your weight and your progress shows up here.';
+  const goalCard = `<section class="card wv-goal" aria-label="Goal weight">
+      <div class="wv-goal-main">
+        <h3 class="eyebrow" style="margin:0">Goal</h3>
+        ${gi ? `<div class="w-now"><b>${fmtKg(gi.kg)}</b><span>kg</span></div>` : ''}
+        <p class="w-sub" style="font-size:13.5px;color:var(--ink-2);max-width:52ch">${esc(goalText)}</p>
+        ${gi && gi.cur ? goalBarHTML(gi) : ''}
+      </div>
+      <div class="wv-form">
+        <div class="field"><label for="wg-input">${gi ? 'Change goal' : 'Goal weight'}</label><div class="w-field"><input id="wg-input" type="number" inputmode="decimal" step="0.1" min="${W_MIN}" max="${W_MAX}" placeholder="e.g. 70" value="${esc(gval)}" data-key="wg-input" ${S.readOnly ? 'disabled' : ''}><span>kg</span></div></div>
+        <button type="button" class="btn primary" data-action="wg-save" data-key="wg-save" ${S.readOnly ? 'disabled' : ''}>${gi ? 'Update goal' : 'Set goal'}</button>
+        ${gi ? `<button type="button" class="btn ghost" data-action="wg-clear" data-key="wg-clear" ${S.readOnly ? 'disabled' : ''}>Remove goal</button>` : ''}
+        ${S.wErr && S.wErrAt === 'goal' ? `<p class="reason-err" role="alert" style="flex-basis:100%">${esc(S.wErr)}</p>` : ''}
+      </div>
+    </section>`;
   let stats = '';
   if (pts.length) {
     const ws = pts.map(p => p.w), first = pts[0], last = pts[pts.length - 1];
     stats = `<dl class="wv-stats">
       <div><dt>Start</dt><dd>${fmtKg(first.w)}<small>kg</small></dd></div>
       <div><dt>Now</dt><dd>${fmtKg(last.w)}<small>kg</small></dd></div>
-      <div><dt>Change</dt><dd class="wv-change">${pts.length > 1 ? deltaText(last.w - first.w) : '–'}</dd></div>
+      <div><dt>Change</dt><dd class="wv-change">${pts.length > 1 ? deltaText(last.w - first.w, dir) : '–'}</dd></div>
       <div><dt>Lowest</dt><dd>${fmtKg(Math.min(...ws))}<small>kg</small></dd></div>
       <div><dt>Highest</dt><dd>${fmtKg(Math.max(...ws))}<small>kg</small></dd></div>
     </dl>`;
@@ -1862,7 +1961,7 @@ function weightHTML(){
     return `<li class="wv-row">
       <span class="wv-date"><b>${esc(fmt(e.d, {weekday:'short'}))}</b> ${esc(fmt(e.d, {month:'short', day:'numeric', year: parse(e.d).getFullYear() !== yr ? 'numeric' : undefined}))}</span>
       <span class="wv-w">${fmtKg(e.w)} kg</span>
-      <span class="wv-c">${prev ? deltaText(e.w - prev.w) : '<span class="wd-flat">First entry</span>'}</span>
+      <span class="wv-c">${prev ? deltaText(e.w - prev.w, dir) : '<span class="wd-flat">First entry</span>'}</span>
       <span class="wv-act">
         <button type="button" class="link" data-action="w-edit" data-date="${e.d}" data-key="w-edit-${e.d}" ${S.readOnly ? 'disabled' : ''}>Edit</button>
         <button type="button" class="dt-del" data-action="w-del" data-date="${e.d}" data-key="w-del-${e.d}" aria-label="Delete weight for ${esc(fmtLong(e.d))}" ${S.readOnly ? 'disabled' : ''}>×</button>
@@ -1874,7 +1973,7 @@ function weightHTML(){
     <div class="sec-head" style="margin:0"><h2 class="h2">Weight</h2><a class="link" href="#today">Back to Today</a></div>
     <section class="card wv-top">
       <div>
-        ${cur ? `<div class="w-now"><b>${fmtKg(cur.w)}</b><span>kg</span></div><div class="w-sub">${cur.d === today ? 'Today' : 'Last logged ' + esc(fmtLong(cur.d))}</div>${weightDeltas(list, cur)}`
+        ${cur ? `<div class="w-now"><b>${fmtKg(cur.w)}</b><span>kg</span></div><div class="w-sub">${cur.d === today ? 'Today' : 'Last logged ' + esc(fmtLong(cur.d))}</div>${weightDeltas(list, cur, dir)}`
           : '<p class="w-empty">No weight logged yet. Add today’s below, then come back each day.</p>'}
       </div>
       <div class="wv-form">
@@ -1884,12 +1983,13 @@ function weightHTML(){
         ${S.wErr && S.wErrAt === 'view' ? `<p class="reason-err" role="alert" style="flex-basis:100%">${esc(S.wErr)}</p>` : ''}
       </div>
     </section>
+    ${goalCard}
     <section class="card wv-chart">
       <div class="wv-chart-head">
         <h3 class="eyebrow" style="margin:0">Trend</h3>
         <div class="seg" role="group" aria-label="Time range">${W_RANGES.map(r => `<button type="button" class="chip ${r.id === rg.id ? 'on' : ''}" aria-pressed="${r.id === rg.id}" data-action="w-range" data-v="${r.id}" data-key="w-range-${r.id}">${esc(r.label)}</button>`).join('')}</div>
       </div>
-      ${list.length ? weightChartHTML(list, from, today, 220) : '<p class="w-hint">Your chart shows up here once you log your weight.</p>'}
+      ${list.length ? weightChartHTML(list, from, today, 220, gi ? gi.kg : null) : '<p class="w-hint">Your chart shows up here once you log your weight.</p>'}
       ${stats}
     </section>
     <section>
@@ -1910,13 +2010,48 @@ function weightSave(date, raw, at){
     focusSel(at === 'view' ? '#wv-input' : '#w-input'); return;
   }
   const w = r1(n);
-  const prev = weightList().filter(e => e.d < date).pop();
+  const before = weightList();
+  const prev = before.filter(e => e.d < date).pop();
+  const g0 = goalInfo(before);
+  // The first weight after setting a goal with no weight logged becomes the goal's starting point.
+  if (S.wGoal && S.wGoal.from == null && !before.length) { S.wGoal = Object.assign({}, S.wGoal, {from: w}); saveTasks(); }
   S.wErr = ''; S.wErrAt = ''; S.wDraft = null; S.wvDraft = null;
   writeDay(date, day => { day.weight = w; });
   render();
+  const g1 = goalInfo(weightList());
+  if (g1 && g1.dir && g1.reached && !(g0 && g0.reached)) { toast('Goal reached: ' + fmtKg(g1.kg) + ' kg. Set a new one on the Weight page.'); return; }
   let msg = 'Weight saved: ' + fmtKg(w) + ' kg';
   if (prev) { const c = r1(w - prev.w); msg += c ? ' (' + (c > 0 ? 'up ' : 'down ') + fmtKg(Math.abs(c)) + ' kg since ' + fmtShort(prev.d) + ')' : ' (same as ' + fmtShort(prev.d) + ')'; }
   toast(msg);
+}
+function goalSave(raw){
+  if (S.readOnly) return;
+  const s = String(raw == null ? '' : raw).trim().replace(',', '.');
+  const n = Number(s);
+  if (!s || !isFinite(n) || n < W_MIN || n > W_MAX) {
+    S.wErr = 'Enter a goal weight in kg, like 70.'; S.wErrAt = 'goal'; render(); focusSel('#wg-input'); return;
+  }
+  const kg = r1(n), list = weightList(), cur = list[list.length - 1] || null, old = S.wGoal;
+  // Keep the original starting point when the new goal points the same way; otherwise start over from today's weight.
+  let from = cur ? cur.w : null, keep = false;
+  if (old && old.from != null && cur) {
+    const way = Math.sign(kg - old.from);
+    if (way && way === Math.sign(old.kg - old.from) && way === Math.sign(kg - cur.w)) { from = old.from; keep = true; }
+  }
+  S.wGoal = {kg, set: keep && old.set ? old.set : todayStr()};
+  if (from != null) S.wGoal.from = from;
+  S.wErr = ''; S.wErrAt = ''; S.wgDraft = null;
+  saveTasks();
+  render();
+  const gi = goalInfo(list);
+  toast('Goal set: ' + fmtKg(kg) + ' kg' + (gi && gi.cur && !gi.reached ? '. ' + fmtKg(gi.left) + ' kg ' + (gi.dir < 0 ? 'to lose' : gi.dir > 0 ? 'to gain' : 'off') + '.' : '.'));
+}
+function goalClear(){
+  if (S.readOnly || !S.wGoal) return;
+  S.wGoal = null; S.wgDraft = null; S.wErr = '';
+  saveTasks();
+  render();
+  toast('Goal removed.');
 }
 function weightDel(date){
   if (S.readOnly || !isDate(date) || !S.days[date] || S.days[date].weight == null) return;
@@ -2259,6 +2394,9 @@ document.addEventListener('click', e => {
     case 'w-save': { const i = $('#w-input'); weightSave(S.selDate, i ? i.value : S.wDraft, 'card'); break; }
     case 'wv-save': { const i = $('#wv-input'); weightSave(S.wvDate && S.wvDate <= today ? S.wvDate : today, i ? i.value : S.wvDraft, 'view'); break; }
     case 'w-del': weightDel(el.dataset.date); break;
+    case 'wg-save': { const i = $('#wg-input'); goalSave(i ? i.value : S.wgDraft); break; }
+    case 'wg-clear': goalClear(); break;
+    case 'goal-weight': go('weight'); setTimeout(() => { const g = $('#wg-input'); if (g) { g.scrollIntoView({block:'center'}); g.focus({preventScroll:true}); } }, 60); break;
     case 'w-edit': {
       S.wvDate = el.dataset.date; S.wvDraft = null; S.wErr = ''; render();
       window.scrollTo({top:0, behavior:'smooth'});
@@ -2347,6 +2485,7 @@ document.addEventListener('input', e => {
   else if (t.id === 'win-input') S.winDraft = t.value;
   else if (t.id === 'w-input') S.wDraft = t.value;
   else if (t.id === 'wv-input') S.wvDraft = t.value;
+  else if (t.id === 'wg-input') S.wgDraft = t.value;
   else if (t.id === 'reason-note') S.reasonNote = t.value;
   else if (t.id === 'sync-input') S.syncInput = t.value;
 });
@@ -2357,6 +2496,7 @@ document.addEventListener('change', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.id === 'sync-input' && !S.syncBusy) { e.preventDefault(); syncJoin(); return; }
   if (e.key === 'Enter' && e.target.id === 'win-input' && !e.isComposing) { e.preventDefault(); winAdd(e.target.dataset.date); return; }
+  if (e.key === 'Enter' && e.target.id === 'wg-input') { e.preventDefault(); goalSave(e.target.value); return; }
   if (e.key === 'Enter' && e.target.id === 'w-input') { e.preventDefault(); weightSave(S.selDate, e.target.value, 'card'); return; }
   if (e.key === 'Enter' && e.target.id === 'wv-input') { e.preventDefault(); const t = todayStr(); weightSave(S.wvDate && S.wvDate <= t ? S.wvDate : t, e.target.value, 'view'); return; }
   if (e.key === 'Enter' && (e.target.id === 'log-amount' || e.target.id === 'log-note') && S.openDetail) { e.preventDefault(); logAdd(S.openDetail, S.logAmount, S.logNote); return; }
