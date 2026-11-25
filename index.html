@@ -289,6 +289,22 @@ button:disabled{cursor:not-allowed}
 .win-hint{margin:8px 0 0;font-size:13.5px;color:var(--ink-2)}
 .win-add{display:flex;gap:8px;margin-top:10px}
 .win-add input{flex:1;min-width:0}
+.todo-sec{margin-top:24px}
+.todo-box{border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--surface);padding:6px 14px 14px}
+.td-head-moved{color:var(--ink-3);text-transform:none;letter-spacing:0;font-weight:600}
+.td-list{list-style:none;margin:0;padding:0}
+.td{display:grid;grid-template-columns:auto minmax(0,1fr) 30px;gap:12px;align-items:center;padding:8px 0}
+.td.ro{grid-template-columns:auto minmax(0,1fr)}
+.td + .td{border-top:1px solid var(--line-2)}
+.tick.sm{width:30px;height:30px;border-radius:9px}
+.tick.sm svg{width:17px;height:17px}
+.td.st-moved .tick{border-style:dashed}
+.td-text{display:block;font-size:14.5px;font-weight:600;line-height:1.4;overflow-wrap:anywhere}
+.td.st-done .td-text{text-decoration:line-through;text-decoration-color:var(--done);text-decoration-thickness:2px;color:var(--ink-2)}
+.td-meta{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:12px;color:var(--ink-3);margin-top:1px}
+.td-late{color:var(--accent-text);font-weight:700}
+.td-moved{color:var(--ink-2)}
+.td-note{margin:10px 0 0;font-size:12.5px;color:var(--ink-3)}
 .wins-grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:24px;align-items:start}
 .wins-rail{display:flex;flex-direction:column;gap:16px;position:sticky;top:calc(env(safe-area-inset-top, 0px) + 16px)}
 @media (max-width:880px){.wins-grid{grid-template-columns:minmax(0,1fr)}.wins-rail{position:static}}
@@ -699,6 +715,7 @@ const STARTERS = [
 ];
 const VIEWS = ['today','wins','history','tasks','ranks','sync','weight'];
 const WIN_MAX = 20, WIN_LEN = 200;
+const TODO_MAX = 50, TODO_LEN = 200;
 const W_MIN = 20, W_MAX = 400; // kg
 const W_RANGES = [{id:'1m', label:'1 month', days:30}, {id:'3m', label:'3 months', days:90}, {id:'1y', label:'1 year', days:365}, {id:'all', label:'All', days:0}];
 const LS_KEY = 'levelup.v1';
@@ -758,6 +775,7 @@ const S = {
   confirmRemove:null,
   histLimit:10,
   winDraft:'', winErr:'', winsLimit:30,
+  todoDraft:'', todoErr:'',
   wDraft:null, wvDraft:null, wvDate:null, wErr:'', wErrAt:'', wRange:'1m', wLimit:30,
   wGoal:null, wgDraft:null,
   calc:null,
@@ -829,7 +847,19 @@ function normDay(date, d){
   }).filter(Boolean);
   // Body weight in kg for that day, or null.
   const weight = d && typeof d.weight === 'number' && isFinite(d.weight) && d.weight >= W_MIN && d.weight <= W_MAX ? Math.round(d.weight * 10) / 10 : null;
-  return {date, plan: d && Array.isArray(d.plan) ? d.plan.filter(x => typeof x === 'string') : null, marks, logs, wins, weight};
+  // To-dos added on that day: todos = [{id, text, t, done}]. done is the date it got ticked;
+  // until then it shows on every day after this one.
+  const seen = new Set();
+  const todos = (d && Array.isArray(d.todos) ? d.todos : []).slice(0, TODO_MAX).map(x => {
+    if (!x || typeof x.id !== 'string' || !/^[a-z0-9]{1,24}$/i.test(x.id) || seen.has(x.id)) return null;
+    if (typeof x.text !== 'string' || !x.text.trim()) return null;
+    seen.add(x.id);
+    const o = {id: x.id, text: x.text.trim().slice(0, TODO_LEN)};
+    if (typeof x.t === 'string' && /^\d{2}:\d{2}$/.test(x.t)) o.t = x.t;
+    if (isDate(x.done) && x.done >= date) o.done = x.done;
+    return o;
+  }).filter(Boolean);
+  return {date, plan: d && Array.isArray(d.plan) ? d.plan.filter(x => typeof x === 'string') : null, marks, logs, wins, weight, todos};
 }
 const taskById = id => S.tasks.find(t => t.id === id);
 
@@ -1063,7 +1093,7 @@ function ago(ts){
 function docBody(id){
   if (id === 'tasks') return {list: S.tasks, wGoal: S.wGoal};
   const d = id.slice(2), day = S.days[d];
-  return day ? {date:d, plan:day.plan, marks:day.marks, logs:day.logs || {}, wins:day.wins || [], weight: day.weight == null ? null : day.weight} : null;
+  return day ? {date:d, plan:day.plan, marks:day.marks, logs:day.logs || {}, wins:day.wins || [], weight: day.weight == null ? null : day.weight, todos: day.todos || []} : null;
 }
 function applyRemote(rows, replace){
   const remote = {};
@@ -1208,8 +1238,10 @@ async function boot(){
 
 /* ---------- Mutations ---------- */
 function writeDay(date, fn){
-  const prev = S.days[date] || {date, plan:null, marks:{}, logs:{}, wins:[], weight:null};
-  const day = {date, plan: scheduledIds(date), marks: Object.assign({}, prev.marks), logs: Object.assign({}, prev.logs || {}), wins: (prev.wins || []).slice(), weight: prev.weight == null ? null : prev.weight};
+  const prev = S.days[date] || {date, plan:null, marks:{}, logs:{}, wins:[], weight:null, todos:[]};
+  // A future day (only to-dos get written there) keeps no plan, so its tasks are worked out when the day comes.
+  const day = {date, plan: date > todayStr() ? null : scheduledIds(date), marks: Object.assign({}, prev.marks), logs: Object.assign({}, prev.logs || {}), wins: (prev.wins || []).slice(), weight: prev.weight == null ? null : prev.weight,
+    todos: (prev.todos || []).map(x => Object.assign({}, x))};
   fn(day);
   S.days[date] = day;
   saveDoc('d-' + date, JSON.parse(JSON.stringify(day)));
@@ -1523,6 +1555,7 @@ function dayHTML(calc){
     ${notice}
     ${st.n ? `<div class="groups">${groups}</div>` : `<div class="empty"><b>Nothing scheduled for this day.</b>Take the rest day, or add a one-off task just for ${esc(fmtLong(d))}.</div>`}
     <div class="add-row"><button type="button" class="btn" data-action="go-add" data-key="go-add">+ Add a task</button></div>
+    ${todoSecHTML(d)}
     ${future ? '' : winsSecHTML(d)}`;
 }
 
@@ -1684,6 +1717,100 @@ function winDel(date, i){
   if (S.readOnly || !isDate(date) || date > todayStr()) return;
   act(() => writeDay(date, day => { day.wins.splice(i, 1); }), {date});
 }
+/* ---------- To-dos: one-off things that move to the next day until they're done ---------- */
+// A to-do is stored once, in the day it was added. It shows on that day and every day after,
+// up to and including the day it gets ticked. Nothing is copied, so "moving" needs no job at midnight.
+function todosOn(d){
+  const out = [];
+  Object.keys(S.days).forEach(c => {
+    if (c > d) return;
+    (S.days[c].todos || []).forEach(x => { if (!x.done || x.done >= d) out.push(Object.assign({from: c}, x)); });
+  });
+  return out.sort((a, b) => a.from < b.from ? -1 : a.from > b.from ? 1 : 0); // oldest first; same-day order kept
+}
+const daysBetween = (a, b) => Math.round((parse(b) - parse(a)) / 864e5);
+function todoFrom(from, d){
+  const today = todayStr();
+  if (from === today) return 'From today';
+  if (from === addDays(today, -1)) return 'From yesterday';
+  return 'From ' + (daysBetween(from, d) <= 6 ? fmt(from, {weekday:'short'}) : fmtShort(from));
+}
+function todoRowHTML(x, d){
+  const today = todayStr();
+  const state = x.done === d ? 'done' : d < today ? 'moved' : 'open';
+  const canTick = !S.readOnly && d <= today, canDel = !S.readOnly && d >= today;
+  const meta = [];
+  if (x.from < d) {
+    const n = d > today ? 0 : daysBetween(x.from, d); // a future day isn't late yet
+    meta.push(`<span class="${n >= 3 ? 'td-late' : ''}">${esc(todoFrom(x.from, d))}${n >= 3 ? ' · ' + n + ' days' : ''}</span>`);
+  }
+  if (state === 'moved') meta.push(`<span class="td-moved"><span aria-hidden="true">↪</span> Moved to next day${x.done ? ' · done ' + esc(daysBetween(d, x.done) <= 6 ? fmt(x.done, {weekday:'short'}) : fmtShort(x.done)) : ''}</span>`);
+  const label = state === 'done' ? 'Undo: ' + x.text + ' is ticked as done'
+    : d < today ? 'Tick ' + x.text + ' as done on ' + fmtLong(d) : 'Tick ' + x.text + ' as done';
+  return `<li class="td st-${state}${canDel ? '' : ' ro'}">
+      <button type="button" class="tick sm" data-action="todo-tick" data-from="${x.from}" data-id="${x.id}" data-key="tdt-${x.id}" aria-pressed="${state === 'done'}" aria-label="${esc(label)}" ${canTick ? '' : 'disabled'}>${ICON.check}</button>
+      <div class="td-main"><span class="td-text">${esc(x.text)}</span>${meta.length ? `<span class="td-meta">${meta.join('')}</span>` : ''}</div>
+      ${canDel ? `<button type="button" class="dt-del" data-action="todo-del" data-from="${x.from}" data-id="${x.id}" data-key="tdd-${x.id}" aria-label="Delete to-do: ${esc(x.text)}">×</button>` : ''}
+    </li>`;
+}
+function todoSecHTML(d){
+  const today = todayStr(), list = todosOn(d), past = d < today, isToday = d === today;
+  const doneN = list.filter(x => x.done === d).length;
+  const moved = isToday ? list.filter(x => x.from < d).length : 0;
+  let hint = '';
+  if (!list.length) hint = past ? 'No to-dos on this day.' : isToday ? 'Add one-off things to get done today, like “Pay the electricity bill”.' : 'Plan ahead: add things to do on ' + fmtLong(d) + '.';
+  const add = !S.readOnly && !past ? `<div class="win-add">
+      <input id="todo-input" type="text" maxlength="${TODO_LEN}" data-date="${d}" placeholder="${isToday ? 'Add a to-do' : 'Add a to-do for ' + esc(fmt(d, {weekday:'short'}))}" value="${esc(S.todoDraft)}" autocomplete="off" data-key="todo-input" aria-label="New to-do for ${esc(isToday ? 'today' : fmtLong(d))}">
+      <button type="button" class="btn primary small" data-action="todo-add" data-date="${d}" data-key="todo-add">Add</button>
+    </div>` : '';
+  const note = isToday ? 'Anything you don’t tick by midnight moves to tomorrow by itself.'
+    : d > today && list.some(x => x.from < d) ? 'To-dos you haven’t finished yet show here too.' : '';
+  return `<section class="todo-sec" aria-label="To-do list">
+    <div class="group-head"><span class="eyebrow">${isToday ? 'To-do today' : 'To-do'}${moved ? ` <span class="td-head-moved">· ${moved} moved from earlier</span>` : ''}</span>${list.length ? `<span class="count">${doneN}/${list.length}</span>` : ''}</div>
+    <div class="todo-box">
+      ${list.length ? `<ul class="td-list">${list.map(x => todoRowHTML(x, d)).join('')}</ul>` : ''}
+      ${hint ? `<p class="win-hint">${esc(hint)}</p>` : ''}
+      ${add}
+      ${S.todoErr ? `<p class="reason-err" role="alert">${esc(S.todoErr)}</p>` : ''}
+      ${note ? `<p class="td-note">${esc(note)}</p>` : ''}
+    </div>
+  </section>`;
+}
+function todoAdd(date){
+  const today = todayStr();
+  if (S.readOnly || !isDate(date) || date < today) return;
+  const text = String(S.todoDraft || '').trim().replace(/\s+/g, ' ').slice(0, TODO_LEN);
+  if (!text) { S.todoErr = 'Type what you need to do, like “Pay the electricity bill”.'; render(); focusSel('#todo-input'); return; }
+  if (((S.days[date] && S.days[date].todos) || []).length >= TODO_MAX) {
+    S.todoErr = 'You’ve added ' + TODO_MAX + ' to-dos on this day, the most it can hold. Delete some you don’t need.'; render(); return;
+  }
+  S.todoDraft = ''; S.todoErr = '';
+  const x = {id: newId(), text};
+  if (date === today) x.t = nowHM();
+  writeDay(date, day => { day.todos.push(x); });
+  render();
+  focusSel('#todo-input');
+}
+function todoTick(from, id, d){
+  const today = todayStr();
+  if (S.readOnly || !isDate(from) || !isDate(d) || d > today || from > d) return;
+  const x = ((S.days[from] && S.days[from].todos) || []).find(y => y.id === id);
+  if (!x) return;
+  const undo = x.done === d;
+  writeDay(from, day => { const y = day.todos.find(z => z.id === id); if (!y) return; if (undo) delete y.done; else y.done = d; });
+  render();
+  if (!undo && from < d && d === today) toast('Done. That one waited ' + plural(daysBetween(from, d), 'day') + '.');
+}
+function todoDel(from, id){
+  if (S.readOnly || !isDate(from)) return;
+  const x = ((S.days[from] && S.days[from].todos) || []).find(y => y.id === id);
+  if (!x) return;
+  writeDay(from, day => { day.todos = day.todos.filter(y => y.id !== id); });
+  render();
+  toast('Deleted “' + (x.text.length > 40 ? x.text.slice(0, 40) + '…' : x.text) + '”.');
+  focusSel('#todo-input');
+}
+
 function winsHTML(calc){
   const today = todayStr(), ws = weekStart(today);
   const days = Object.keys(S.days).filter(d => d <= today && winsOf(d).length).sort().reverse();
@@ -2336,10 +2463,10 @@ document.addEventListener('click', e => {
       break;
     case 'copy-code': if (S.sync.code) copyText(showCode(S.sync.code), 'Sync code copied.'); break;
     case 'copy-link': if (S.sync.code) copyText(location.origin + location.pathname + '#sync=' + S.sync.code, 'Link copied. Open it on your other device.'); break;
-    case 'sel-day': S.selDate = el.dataset.date; S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; render(); break;
-    case 'week-prev': S.selDate = addDays(S.selDate, -7); S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; render(); break;
-    case 'week-next': S.selDate = addDays(S.selDate, 7); S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; render(); break;
-    case 'go-today': S.selDate = today; S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; render(); break;
+    case 'sel-day': S.selDate = el.dataset.date; S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; S.todoErr = ''; render(); break;
+    case 'week-prev': S.selDate = addDays(S.selDate, -7); S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; S.todoErr = ''; render(); break;
+    case 'week-next': S.selDate = addDays(S.selDate, 7); S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; S.todoErr = ''; render(); break;
+    case 'go-today': S.selDate = today; S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; S.todoErr = ''; render(); break;
     case 'tick': {
       if (S.readOnly || S.selDate > today) return;
       const d = S.selDate, cur = S.days[d] && S.days[d].marks[id];
@@ -2405,6 +2532,9 @@ document.addEventListener('click', e => {
     }
     case 'w-range': S.wRange = el.dataset.v; render(); break;
     case 'w-more': S.wLimit += 30; render(); break;
+    case 'todo-add': todoAdd(el.dataset.date); break;
+    case 'todo-tick': todoTick(el.dataset.from, id, S.selDate); break;
+    case 'todo-del': todoDel(el.dataset.from, id); break;
     case 'win-add': winAdd(el.dataset.date); break;
     case 'win-del': winDel(el.dataset.date, +el.dataset.i); break;
     case 'wins-more': S.winsLimit += 30; render(); break;
@@ -2483,6 +2613,7 @@ document.addEventListener('input', e => {
   else if (t.id === 'log-amount') S.logAmount = t.value;
   else if (t.id === 'log-note') S.logNote = t.value;
   else if (t.id === 'win-input') S.winDraft = t.value;
+  else if (t.id === 'todo-input') { S.todoDraft = t.value; if (S.todoErr && t.value.trim()) { S.todoErr = ''; const p = document.querySelector('.todo-box .reason-err'); if (p) p.remove(); } }
   else if (t.id === 'w-input') S.wDraft = t.value;
   else if (t.id === 'wv-input') S.wvDraft = t.value;
   else if (t.id === 'wg-input') S.wgDraft = t.value;
@@ -2496,6 +2627,7 @@ document.addEventListener('change', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.id === 'sync-input' && !S.syncBusy) { e.preventDefault(); syncJoin(); return; }
   if (e.key === 'Enter' && e.target.id === 'win-input' && !e.isComposing) { e.preventDefault(); winAdd(e.target.dataset.date); return; }
+  if (e.key === 'Enter' && e.target.id === 'todo-input' && !e.isComposing) { e.preventDefault(); todoAdd(e.target.dataset.date); return; }
   if (e.key === 'Enter' && e.target.id === 'wg-input') { e.preventDefault(); goalSave(e.target.value); return; }
   if (e.key === 'Enter' && e.target.id === 'w-input') { e.preventDefault(); weightSave(S.selDate, e.target.value, 'card'); return; }
   if (e.key === 'Enter' && e.target.id === 'wv-input') { e.preventDefault(); const t = todayStr(); weightSave(S.wvDate && S.wvDate <= t ? S.wvDate : t, e.target.value, 'view'); return; }
