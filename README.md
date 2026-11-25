@@ -6,6 +6,7 @@ A daily progress tracker that works like a game. Add your daily tasks (gym, runn
 
 ## How it works
 
+- **Weight:** a card at the top of the Today screen where you log your weight (kg) each day. It shows how much it went up or down since your last entry, over 7 days and over 30 days, with a 30-day trend line. **History and chart** opens a full page with a bigger chart (1 month, 3 months, 1 year or all), your start, lowest and highest weight, and every entry with its change. You can edit or delete any day, or add a past date.
 - **Today:** tick each task, or press *Didn't do it* and pick a reason (too tired, no time, work overload, sick, forgot, and more).
 - **Log sets:** tap a task's name to open it. Give it a daily goal, like 100 push-ups, then add each set as you finish it (12, 10, 15…). Each set is saved with the time and an optional note, and a progress bar shows how much is left. The task ticks itself when you reach the goal, and un-ticks if you delete a set and drop below it. Tasks without a goal can log notes too.
 - **Wins:** at the end of each day, write the best things you did that day ("Finished the report early", "Called my parents"). Add them under your tasks on the Today screen, or in the **Wins** tab. Writing at least one win earns +1 XP for that day. The Wins tab shows which days this week you wrote something, how many days in a row, and every past day's wins, newest first and grouped by week. Tap a past day to open it and add more.

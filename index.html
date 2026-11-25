@@ -318,8 +318,81 @@ button:disabled{cursor:not-allowed}
 .win-day-head:hover b{color:var(--accent-text)}
 .goal-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px}
 
-input[type="text"],input[type="number"]{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;width:100%}
-input[type="text"]:focus,input[type="number"]:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+input[type="text"],input[type="number"],input[type="date"]{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;width:100%}
+input[type="text"]:focus,input[type="number"]:focus,input[type="date"]:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Weight */
+.main-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.weight-card{padding:16px 20px 18px}
+.w-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.w-head .eyebrow{margin:0;color:var(--ink-2)}
+.w-body{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 20px;align-items:start;margin-top:6px}
+.w-now{display:flex;align-items:baseline;gap:6px}
+.w-now b{font-family:var(--font-display);font-weight:800;font-size:46px;line-height:1;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.w-now span{font-weight:800;color:var(--ink-2)}
+.w-sub{font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.w-empty{margin:4px 0 0;font-size:14px;color:var(--ink-2);max-width:36ch}
+.w-deltas{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.wchip{display:inline-flex;align-items:baseline;gap:6px;padding:3px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line-2);font-family:var(--font-mono);font-size:12px;font-weight:700;white-space:nowrap}
+.wchip small{font-family:var(--font-body);font-size:11px;font-weight:700;color:var(--ink-3)}
+.wd-up,.wd-down{color:var(--ink)}
+.wd-flat{color:var(--ink-3)}
+.w-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:6px}
+.w-form{display:flex;gap:8px;align-items:center}
+.w-field{display:flex;align-items:center;gap:6px}
+.w-field input{width:104px}
+.w-field span{font-weight:700;color:var(--ink-2);font-size:13px}
+.w-hint{margin:0;font-size:12.5px;color:var(--ink-3)}
+.weight-card .w-hint:last-child{margin-top:10px}
+@media (max-width:560px){
+  .w-body{grid-template-columns:minmax(0,1fr)}
+  .w-side{align-items:stretch;padding-top:0}
+  .w-field{flex:1}
+  .w-field input{width:100%}
+}
+.wchart{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;margin-top:22px}
+.wc-y{position:relative;height:var(--h);min-width:28px}
+.wc-y span{position:absolute;right:0;transform:translateY(-50%);font-family:var(--font-mono);font-size:11px;color:var(--ink-3);white-space:nowrap;line-height:1}
+.wc-plot{position:relative;height:var(--h);touch-action:pan-y;cursor:crosshair}
+.wc-plot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.wc-grid{stroke:var(--line-2);stroke-width:1}
+.wc-area{fill:var(--accent);opacity:.1}
+.wc-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.wc-dot,.wc-hdot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--surface);transform:translate(-50%,-50%);pointer-events:none}
+.wc-dot.last{width:10px;height:10px}
+.wc-hdot{width:12px;height:12px;display:none;z-index:1}
+.wc-cross{position:absolute;top:0;bottom:0;width:1px;background:var(--ink-3);display:none;pointer-events:none}
+.wc-tip{position:absolute;top:-10px;display:none;flex-direction:column;gap:1px;background:var(--ink);color:var(--bg);padding:6px 10px;border-radius:8px;font-size:12px;line-height:1.35;white-space:nowrap;pointer-events:none;z-index:2;box-shadow:var(--shadow)}
+.wc-tip b{font-family:var(--font-mono);font-size:13px}
+.wc-plot.hovering .wc-cross,.wc-plot.hovering .wc-hdot{display:block}
+.wc-plot.hovering .wc-tip{display:flex}
+.wc-x{grid-column:2;display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-top:6px}
+.weight-card .wchart{margin-top:18px}
+.wv{display:flex;flex-direction:column;gap:16px}
+.wv-top{padding:18px 20px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 24px;align-items:end}
+.wv-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.wv-form .field{gap:4px}
+.wv-form input[type="date"]{width:auto}
+@media (max-width:640px){.wv-top{grid-template-columns:minmax(0,1fr)}.wv-form .field{flex:1 1 140px}.wv-form input[type="date"]{width:100%}}
+.wv-chart{padding:16px 20px 18px}
+.wv-chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.wv-chart .wchart{margin-top:30px}
+.wv-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:16px 0 0;padding-top:12px;border-top:1px solid var(--line-2)}
+.wv-stats dt{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.wv-stats dd{margin:2px 0 0;font-family:var(--font-display);font-weight:800;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:3px}
+.wv-stats dd small{font-family:var(--font-body);font-size:12px;color:var(--ink-3)}
+.wv-stats .wv-change{font-family:var(--font-mono);font-size:15px;font-weight:700;padding-top:6px}
+@media (max-width:560px){.wv-stats{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:12px}}
+.wv-list{list-style:none;margin:0;padding:4px 0}
+.wv-row{display:grid;grid-template-columns:minmax(120px,1fr) 90px minmax(100px,1fr) auto;gap:10px;align-items:center;padding:8px 10px 8px 18px}
+.wv-row + .wv-row{border-top:1px solid var(--line-2)}
+.wv-date{font-size:14px;color:var(--ink-2)}
+.wv-date b{color:var(--ink);font-weight:800}
+.wv-w{font-family:var(--font-mono);font-weight:700;font-size:14px}
+.wv-c{font-family:var(--font-mono);font-size:12.5px}
+.wv-act{display:flex;align-items:center;gap:8px}
+@media (max-width:560px){.wv-row{grid-template-columns:minmax(0,1fr) auto auto;padding-left:14px}.wv-c{grid-column:1 / -1;grid-row:2}}
 
 .add-row{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
 
@@ -605,8 +678,10 @@ const STARTERS = [
   {name:'Plan tomorrow', cat:'work', diff:1, target:'Top 3 priorities'},
   {name:'Read', cat:'mind', diff:1, target:'', goal:20, unit:'min'}
 ];
-const VIEWS = ['today','wins','history','tasks','ranks','sync'];
+const VIEWS = ['today','wins','history','tasks','ranks','sync','weight'];
 const WIN_MAX = 20, WIN_LEN = 200;
+const W_MIN = 20, W_MAX = 400; // kg
+const W_RANGES = [{id:'1m', label:'1 month', days:30}, {id:'3m', label:'3 months', days:90}, {id:'1y', label:'1 year', days:365}, {id:'all', label:'All', days:0}];
 const LS_KEY = 'levelup.v1';
 // Cross-device sync for the standalone (GitHub Pages) version. The key is a public, publishable key.
 const SYNC_CFG = {url:'https://jbthimqagqthsoraffyl.supabase.co', key:'sb_publishable_M4MbmkOciErD-UV8A9GSMw_BEWVk7rj'};
@@ -664,6 +739,7 @@ const S = {
   confirmRemove:null,
   histLimit:10,
   winDraft:'', winErr:'', winsLimit:30,
+  wDraft:null, wvDraft:null, wvDate:null, wErr:'', wErrAt:'', wRange:'1m', wLimit:30,
   calc:null,
   standalone:false,
   sync:{code:null, status:'off', last:null, dirty:new Set(), err:''},
@@ -722,7 +798,9 @@ function normDay(date, d){
     if (typeof w.t === 'string' && /^\d{2}:\d{2}$/.test(w.t)) o.t = w.t;
     return o;
   }).filter(Boolean);
-  return {date, plan: d && Array.isArray(d.plan) ? d.plan.filter(x => typeof x === 'string') : null, marks, logs, wins};
+  // Body weight in kg for that day, or null.
+  const weight = d && typeof d.weight === 'number' && isFinite(d.weight) && d.weight >= W_MIN && d.weight <= W_MAX ? Math.round(d.weight * 10) / 10 : null;
+  return {date, plan: d && Array.isArray(d.plan) ? d.plan.filter(x => typeof x === 'string') : null, marks, logs, wins, weight};
 }
 const taskById = id => S.tasks.find(t => t.id === id);
 
@@ -955,7 +1033,7 @@ function ago(ts){
 function docBody(id){
   if (id === 'tasks') return {list: S.tasks};
   const d = id.slice(2), day = S.days[d];
-  return day ? {date:d, plan:day.plan, marks:day.marks, logs:day.logs || {}, wins:day.wins || []} : null;
+  return day ? {date:d, plan:day.plan, marks:day.marks, logs:day.logs || {}, wins:day.wins || [], weight: day.weight == null ? null : day.weight} : null;
 }
 function applyRemote(rows, replace){
   const remote = {};
@@ -1099,8 +1177,8 @@ async function boot(){
 
 /* ---------- Mutations ---------- */
 function writeDay(date, fn){
-  const prev = S.days[date] || {date, plan:null, marks:{}, logs:{}, wins:[]};
-  const day = {date, plan: scheduledIds(date), marks: Object.assign({}, prev.marks), logs: Object.assign({}, prev.logs || {}), wins: (prev.wins || []).slice()};
+  const prev = S.days[date] || {date, plan:null, marks:{}, logs:{}, wins:[], weight:null};
+  const day = {date, plan: scheduledIds(date), marks: Object.assign({}, prev.marks), logs: Object.assign({}, prev.logs || {}), wins: (prev.wins || []).slice(), weight: prev.weight == null ? null : prev.weight};
   fn(day);
   S.days[date] = day;
   saveDoc('d-' + date, JSON.parse(JSON.stringify(day)));
@@ -1208,6 +1286,7 @@ function render(calc){
   const app = $('#app');
   if (!S.loaded) app.innerHTML = '<div class="loading">Loading your log…</div>';
   else if (S.view === 'wins') app.innerHTML = winsHTML(calc);
+  else if (S.view === 'weight') app.innerHTML = weightHTML();
   else if (S.view === 'history') app.innerHTML = historyHTML(calc);
   else if (S.view === 'tasks') app.innerHTML = tasksHTML();
   else if (S.view === 'ranks') app.innerHTML = ranksHTML(calc);
@@ -1348,6 +1427,8 @@ function todayHTML(calc){
   return `
   <div class="today-grid">
     <div class="rail">${rankCardHTML(calc)}${rulesHTML()}</div>
+    <div class="main-col">
+    ${weightCardHTML()}
     <section class="card day-panel" aria-label="Daily checklist">
       <div class="week-nav">
         <button type="button" class="icon-btn" data-action="week-prev" data-key="week-prev" aria-label="Previous week">${ICON.left}</button>
@@ -1358,6 +1439,7 @@ function todayHTML(calc){
       <div class="week-strip">${strip}</div>
       ${S.tasks.length ? dayHTML(calc) : onboardHTML()}
     </section>
+    </div>
   </div>`;
 }
 
@@ -1632,6 +1714,216 @@ function winsHTML(calc){
         : `<div class="empty" style="margin-top:0"><b>No past wins yet.</b>Every day you write your wins, they show up here so you can look back on them.</div>`}
     </section>
   </div>`;
+}
+
+/* ---------- Weight ---------- */
+const fmtKg = n => Number(n).toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1});
+const r1 = n => Math.round(n * 10) / 10;
+function weightList(){
+  const today = todayStr();
+  return Object.keys(S.days).filter(d => d <= today && S.days[d].weight != null).sort().map(d => ({d, w: S.days[d].weight}));
+}
+function weightOn(list, d){ let r = null; for (const e of list) { if (e.d <= d) r = e; else break; } return r; }
+function deltaText(diff){
+  const v = r1(diff);
+  if (!v) return '<span class="wd-flat">No change</span>';
+  return `<span class="wd-${v > 0 ? 'up' : 'down'}"><span aria-hidden="true">${v > 0 ? '▲' : '▼'}</span><span class="vh">${v > 0 ? 'Up' : 'Down'}</span> ${fmtKg(Math.abs(v))} kg</span>`;
+}
+function wchip(label, diff){ return `<span class="wchip"><small>${esc(label)}</small>${deltaText(diff)}</span>`; }
+function weightDeltas(list, cur){
+  if (!cur) return '';
+  const i = list.indexOf(cur), prev = i > 0 ? list[i - 1] : null;
+  const w7 = weightOn(list, addDays(cur.d, -7)), w30 = weightOn(list, addDays(cur.d, -30));
+  const out = [];
+  if (prev) out.push(wchip('Since ' + fmtShort(prev.d), cur.w - prev.w));
+  if (w7) out.push(wchip('7 days', cur.w - w7.w));
+  if (w30) out.push(wchip('30 days', cur.w - w30.w));
+  return out.length ? `<div class="w-deltas">${out.join('')}</div>` : '';
+}
+function niceStep(raw){
+  const p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+}
+// Line chart of weight over [from, to]. Lines and grid live in a stretched SVG;
+// dots, labels and the tooltip are HTML positioned in percent, so nothing distorts at any width.
+function weightChartHTML(all, from, to, h){
+  const pts = all.filter(e => e.d >= from && e.d <= to);
+  if (pts.length < 2) return `<p class="w-hint">${pts.length ? 'Log one more day to see your trend line.' : 'No weight logged in this period.'}</p>`;
+  const t0 = parse(from).getTime(), span = Math.max(1, parse(to).getTime() - t0);
+  let lo = Math.min(...pts.map(p => p.w)), hi = Math.max(...pts.map(p => p.w));
+  const step = niceStep((hi - lo) / 3 || 0.5);
+  lo = Math.floor(lo / step + 1e-9) * step; hi = Math.ceil(hi / step - 1e-9) * step;
+  if (hi - lo < step * 2) { lo -= step; hi += step; }
+  const X = d => (parse(d).getTime() - t0) / span * 100;
+  const Y = w => (1 - (w - lo) / (hi - lo)) * 100;
+  const xy = pts.map(p => ({d: p.d, w: p.w, x: r1(X(p.d) * 10) / 10, y: r1(Y(p.w) * 10) / 10}));
+  const line = xy.map((p, i) => (i ? 'L' : 'M') + p.x + ' ' + p.y).join(' ');
+  const area = line + ` L ${xy[xy.length - 1].x} 100 L ${xy[0].x} 100 Z`;
+  const ticks = [];
+  for (let v = lo; v <= hi + 1e-9; v += step) ticks.push(Math.round(v * 100) / 100);
+  // Change vs the entry before it (from the full log, not just this range), for the tooltip.
+  const tip = xy.map(p => { const i = all.findIndex(e => e.d === p.d); return Object.assign({c: i > 0 ? r1(p.w - all[i - 1].w) : null}, p); });
+  const dots = xy.length <= 45 ? xy.map((p, i) => `<span class="wc-dot${i === xy.length - 1 ? ' last' : ''}" style="left:${p.x}%;top:${p.y}%"></span>`).join('')
+    : `<span class="wc-dot last" style="left:${xy[xy.length - 1].x}%;top:${xy[xy.length - 1].y}%"></span>`;
+  const yearFmt = s => fmt(s, {month:'short', day:'numeric', year: parse(from).getFullYear() !== parse(to).getFullYear() ? 'numeric' : undefined});
+  return `<div class="wchart" style="--h:${h}px">
+    <div class="wc-y" aria-hidden="true">${ticks.map(v => `<span style="top:${Y(v)}%">${step < 1 ? v.toFixed(1) : String(v)}</span>`).join('')}</div>
+    <div class="wc-plot" data-pts="${esc(JSON.stringify(tip))}" role="img" aria-label="Weight from ${esc(fmtShort(from))} to ${esc(fmtShort(to))}: ${fmtKg(pts[0].w)} kg to ${fmtKg(pts[pts.length - 1].w)} kg. The full list is below.">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        ${ticks.map(v => `<line class="wc-grid" x1="0" x2="100" y1="${Y(v)}" y2="${Y(v)}" vector-effect="non-scaling-stroke"/>`).join('')}
+        <path class="wc-area" d="${area}"/>
+        <path class="wc-line" d="${line}" vector-effect="non-scaling-stroke"/>
+      </svg>
+      ${dots}
+      <span class="wc-cross"></span><span class="wc-hdot"></span><div class="wc-tip"></div>
+    </div>
+    <div class="wc-x" aria-hidden="true"><span>${esc(yearFmt(from))}</span><span>${esc(yearFmt(to))}</span></div>
+  </div>`;
+}
+function chartHover(e){
+  const plot = e.target && e.target.closest ? e.target.closest('.wc-plot') : null;
+  document.querySelectorAll('.wc-plot.hovering').forEach(p => { if (p !== plot) p.classList.remove('hovering'); });
+  if (!plot) return;
+  let pts; try { pts = JSON.parse(plot.dataset.pts || '[]'); } catch (_) { return; }
+  if (!pts.length) return;
+  const r = plot.getBoundingClientRect(), xp = (e.clientX - r.left) / r.width * 100;
+  let best = pts[0];
+  pts.forEach(p => { if (Math.abs(p.x - xp) < Math.abs(best.x - xp)) best = p; });
+  plot.classList.add('hovering');
+  plot.querySelector('.wc-cross').style.left = best.x + '%';
+  const hd = plot.querySelector('.wc-hdot'); hd.style.left = best.x + '%'; hd.style.top = best.y + '%';
+  const tip = plot.querySelector('.wc-tip');
+  tip.innerHTML = `<b>${fmtKg(best.w)} kg</b><span>${esc(fmtLong(best.d))}</span>${best.c != null ? `<span>${best.c ? (best.c > 0 ? '▲ ' : '▼ ') + fmtKg(Math.abs(best.c)) + ' kg' : 'No change'}</span>` : ''}`;
+  tip.style.left = best.x + '%';
+  tip.style.transform = best.x < 18 ? 'translate(0,-100%)' : best.x > 82 ? 'translate(-100%,-100%)' : 'translate(-50%,-100%)';
+}
+document.addEventListener('pointermove', chartHover);
+document.addEventListener('pointerdown', chartHover);
+
+function weightCardHTML(){
+  const today = todayStr(), d = S.selDate, future = d > today;
+  const list = weightList();
+  const ref = future ? today : d;
+  const cur = weightOn(list, ref);
+  const dayW = !future && S.days[d] && S.days[d].weight != null ? S.days[d].weight : null;
+  const ro = S.readOnly || future;
+  const val = S.wDraft != null ? S.wDraft : dayW != null ? String(dayW) : '';
+  const when = d === today ? 'today' : 'on ' + fmtLong(d);
+  let sub = '';
+  if (cur) sub = cur.d === ref ? (ref === today ? 'Today' : fmtLong(ref)) : 'Last logged ' + fmtLong(cur.d);
+  let hint = '';
+  if (future) hint = 'You can log this day when it comes.';
+  else if (dayW == null) hint = d === today ? 'Not logged today yet.' : 'Not logged on this day.';
+  return `<section class="card weight-card" aria-label="Weight">
+    <div class="w-head"><h2 class="eyebrow">Weight</h2><a class="link" href="#weight">History and chart</a></div>
+    <div class="w-body">
+      <div class="w-main">
+        ${cur ? `<div class="w-now"><b>${fmtKg(cur.w)}</b><span>kg</span></div><div class="w-sub">${esc(sub)}</div>${weightDeltas(list, cur)}`
+          : '<p class="w-empty">Log your weight every day to see if it’s going up or down.</p>'}
+      </div>
+      <div class="w-side">
+        <div class="w-form">
+          <div class="w-field"><input id="w-input" type="number" inputmode="decimal" step="0.1" min="${W_MIN}" max="${W_MAX}" placeholder="${cur ? fmtKg(cur.w) : 'e.g. 72.5'}" value="${esc(val)}" data-key="w-input" aria-label="Weight ${esc(when)} in kg" ${ro ? 'disabled' : ''}><span>kg</span></div>
+          <button type="button" class="btn primary small" data-action="w-save" data-key="w-save" ${ro ? 'disabled' : ''}>${dayW != null ? 'Update' : 'Save'}</button>
+        </div>
+        ${hint ? `<p class="w-hint">${esc(hint)}</p>` : ''}
+        ${S.wErr && S.wErrAt === 'card' ? `<p class="reason-err" role="alert">${esc(S.wErr)}</p>` : ''}
+      </div>
+    </div>
+    ${list.length ? weightChartHTML(list, addDays(today, -29), today, 92) : ''}
+  </section>`;
+}
+
+function weightHTML(){
+  const today = todayStr(), list = weightList();
+  const cur = list[list.length - 1] || null;
+  const date = S.wvDate && S.wvDate <= today ? S.wvDate : today;
+  const existing = S.days[date] && S.days[date].weight != null ? S.days[date].weight : null;
+  const val = S.wvDraft != null ? S.wvDraft : existing != null ? String(existing) : '';
+  const rg = W_RANGES.find(r => r.id === S.wRange) || W_RANGES[0];
+  const from = rg.days ? addDays(today, -(rg.days - 1)) : (list[0] ? list[0].d : today);
+  const pts = list.filter(e => e.d >= from);
+  let stats = '';
+  if (pts.length) {
+    const ws = pts.map(p => p.w), first = pts[0], last = pts[pts.length - 1];
+    stats = `<dl class="wv-stats">
+      <div><dt>Start</dt><dd>${fmtKg(first.w)}<small>kg</small></dd></div>
+      <div><dt>Now</dt><dd>${fmtKg(last.w)}<small>kg</small></dd></div>
+      <div><dt>Change</dt><dd class="wv-change">${pts.length > 1 ? deltaText(last.w - first.w) : '–'}</dd></div>
+      <div><dt>Lowest</dt><dd>${fmtKg(Math.min(...ws))}<small>kg</small></dd></div>
+      <div><dt>Highest</dt><dd>${fmtKg(Math.max(...ws))}<small>kg</small></dd></div>
+    </dl>`;
+  }
+  const yr = parse(today).getFullYear();
+  const rows = list.slice().reverse();
+  const shown = rows.slice(0, S.wLimit);
+  const listHTML = shown.map(e => {
+    const i = list.indexOf(e), prev = i > 0 ? list[i - 1] : null;
+    return `<li class="wv-row">
+      <span class="wv-date"><b>${esc(fmt(e.d, {weekday:'short'}))}</b> ${esc(fmt(e.d, {month:'short', day:'numeric', year: parse(e.d).getFullYear() !== yr ? 'numeric' : undefined}))}</span>
+      <span class="wv-w">${fmtKg(e.w)} kg</span>
+      <span class="wv-c">${prev ? deltaText(e.w - prev.w) : '<span class="wd-flat">First entry</span>'}</span>
+      <span class="wv-act">
+        <button type="button" class="link" data-action="w-edit" data-date="${e.d}" data-key="w-edit-${e.d}" ${S.readOnly ? 'disabled' : ''}>Edit</button>
+        <button type="button" class="dt-del" data-action="w-del" data-date="${e.d}" data-key="w-del-${e.d}" aria-label="Delete weight for ${esc(fmtLong(e.d))}" ${S.readOnly ? 'disabled' : ''}>×</button>
+      </span>
+    </li>`;
+  }).join('');
+
+  return `<div class="wv">
+    <div class="sec-head" style="margin:0"><h2 class="h2">Weight</h2><a class="link" href="#today">Back to Today</a></div>
+    <section class="card wv-top">
+      <div>
+        ${cur ? `<div class="w-now"><b>${fmtKg(cur.w)}</b><span>kg</span></div><div class="w-sub">${cur.d === today ? 'Today' : 'Last logged ' + esc(fmtLong(cur.d))}</div>${weightDeltas(list, cur)}`
+          : '<p class="w-empty">No weight logged yet. Add today’s below, then come back each day.</p>'}
+      </div>
+      <div class="wv-form">
+        <div class="field"><label for="wv-date">Date</label><input id="wv-date" type="date" max="${today}" value="${date}" data-key="wv-date" ${S.readOnly ? 'disabled' : ''}></div>
+        <div class="field"><label for="wv-input">Weight</label><div class="w-field"><input id="wv-input" type="number" inputmode="decimal" step="0.1" min="${W_MIN}" max="${W_MAX}" placeholder="${cur ? fmtKg(cur.w) : 'e.g. 72.5'}" value="${esc(val)}" data-key="wv-input" ${S.readOnly ? 'disabled' : ''}><span>kg</span></div></div>
+        <button type="button" class="btn primary" data-action="wv-save" data-key="wv-save" ${S.readOnly ? 'disabled' : ''}>${existing != null ? 'Update' : 'Save'}</button>
+        ${S.wErr && S.wErrAt === 'view' ? `<p class="reason-err" role="alert" style="flex-basis:100%">${esc(S.wErr)}</p>` : ''}
+      </div>
+    </section>
+    <section class="card wv-chart">
+      <div class="wv-chart-head">
+        <h3 class="eyebrow" style="margin:0">Trend</h3>
+        <div class="seg" role="group" aria-label="Time range">${W_RANGES.map(r => `<button type="button" class="chip ${r.id === rg.id ? 'on' : ''}" aria-pressed="${r.id === rg.id}" data-action="w-range" data-v="${r.id}" data-key="w-range-${r.id}">${esc(r.label)}</button>`).join('')}</div>
+      </div>
+      ${list.length ? weightChartHTML(list, from, today, 220) : '<p class="w-hint">Your chart shows up here once you log your weight.</p>'}
+      ${stats}
+    </section>
+    <section>
+      <div class="sec-head"><h2 class="h2">All entries</h2><p>${plural(list.length, 'day')} logged</p></div>
+      ${list.length ? `<ol class="card wv-list">${listHTML}</ol>
+        ${rows.length > shown.length ? '<div class="add-row"><button type="button" class="btn" data-action="w-more" data-key="w-more">Show older entries</button></div>' : ''}`
+        : '<div class="empty" style="margin-top:0"><b>Nothing here yet.</b>Each day you log your weight shows up in this list with how much it changed.</div>'}
+    </section>
+  </div>`;
+}
+function weightSave(date, raw, at){
+  const today = todayStr();
+  if (S.readOnly || !isDate(date) || date > today) return;
+  const s = String(raw == null ? '' : raw).trim().replace(',', '.');
+  const n = Number(s);
+  if (!s || !isFinite(n) || n < W_MIN || n > W_MAX) {
+    S.wErr = 'Enter your weight in kg, like 72.5.'; S.wErrAt = at; render();
+    focusSel(at === 'view' ? '#wv-input' : '#w-input'); return;
+  }
+  const w = r1(n);
+  const prev = weightList().filter(e => e.d < date).pop();
+  S.wErr = ''; S.wErrAt = ''; S.wDraft = null; S.wvDraft = null;
+  writeDay(date, day => { day.weight = w; });
+  render();
+  let msg = 'Weight saved: ' + fmtKg(w) + ' kg';
+  if (prev) { const c = r1(w - prev.w); msg += c ? ' (' + (c > 0 ? 'up ' : 'down ') + fmtKg(Math.abs(c)) + ' kg since ' + fmtShort(prev.d) + ')' : ' (same as ' + fmtShort(prev.d) + ')'; }
+  toast(msg);
+}
+function weightDel(date){
+  if (S.readOnly || !isDate(date) || !S.days[date] || S.days[date].weight == null) return;
+  writeDay(date, day => { day.weight = null; });
+  if (S.wvDate === date) S.wvDraft = null;
+  render();
+  toast('Removed the weight for ' + fmtLong(date) + '.');
 }
 
 function onboardHTML(){
@@ -1909,10 +2201,10 @@ document.addEventListener('click', e => {
       break;
     case 'copy-code': if (S.sync.code) copyText(showCode(S.sync.code), 'Sync code copied.'); break;
     case 'copy-link': if (S.sync.code) copyText(location.origin + location.pathname + '#sync=' + S.sync.code, 'Link copied. Open it on your other device.'); break;
-    case 'sel-day': S.selDate = el.dataset.date; S.openReason = null; S.openDetail = null; render(); break;
-    case 'week-prev': S.selDate = addDays(S.selDate, -7); S.openReason = null; S.openDetail = null; render(); break;
-    case 'week-next': S.selDate = addDays(S.selDate, 7); S.openReason = null; S.openDetail = null; render(); break;
-    case 'go-today': S.selDate = today; S.openReason = null; S.openDetail = null; render(); break;
+    case 'sel-day': S.selDate = el.dataset.date; S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; render(); break;
+    case 'week-prev': S.selDate = addDays(S.selDate, -7); S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; render(); break;
+    case 'week-next': S.selDate = addDays(S.selDate, 7); S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; render(); break;
+    case 'go-today': S.selDate = today; S.openReason = null; S.openDetail = null; S.wDraft = null; S.wErr = ''; render(); break;
     case 'tick': {
       if (S.readOnly || S.selDate > today) return;
       const d = S.selDate, cur = S.days[d] && S.days[d].marks[id];
@@ -1964,6 +2256,17 @@ document.addEventListener('click', e => {
       const o = document.querySelector('[data-key="open-' + id + '"]'); if (o) o.focus({preventScroll:true});
       break;
     }
+    case 'w-save': { const i = $('#w-input'); weightSave(S.selDate, i ? i.value : S.wDraft, 'card'); break; }
+    case 'wv-save': { const i = $('#wv-input'); weightSave(S.wvDate && S.wvDate <= today ? S.wvDate : today, i ? i.value : S.wvDraft, 'view'); break; }
+    case 'w-del': weightDel(el.dataset.date); break;
+    case 'w-edit': {
+      S.wvDate = el.dataset.date; S.wvDraft = null; S.wErr = ''; render();
+      window.scrollTo({top:0, behavior:'smooth'});
+      const i = $('#wv-input'); if (i) { i.focus({preventScroll:true}); i.select(); }
+      break;
+    }
+    case 'w-range': S.wRange = el.dataset.v; render(); break;
+    case 'w-more': S.wLimit += 30; render(); break;
     case 'win-add': winAdd(el.dataset.date); break;
     case 'win-del': winDel(el.dataset.date, +el.dataset.i); break;
     case 'wins-more': S.winsLimit += 30; render(); break;
@@ -2042,15 +2345,20 @@ document.addEventListener('input', e => {
   else if (t.id === 'log-amount') S.logAmount = t.value;
   else if (t.id === 'log-note') S.logNote = t.value;
   else if (t.id === 'win-input') S.winDraft = t.value;
+  else if (t.id === 'w-input') S.wDraft = t.value;
+  else if (t.id === 'wv-input') S.wvDraft = t.value;
   else if (t.id === 'reason-note') S.reasonNote = t.value;
   else if (t.id === 'sync-input') S.syncInput = t.value;
 });
 document.addEventListener('change', e => {
   if (e.target.id === 'tf-once') { S.form.once = e.target.checked; render(); }
+  else if (e.target.id === 'wv-date' && isDate(e.target.value)) { S.wvDate = e.target.value; S.wvDraft = null; S.wErr = ''; render(); }
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.id === 'sync-input' && !S.syncBusy) { e.preventDefault(); syncJoin(); return; }
   if (e.key === 'Enter' && e.target.id === 'win-input' && !e.isComposing) { e.preventDefault(); winAdd(e.target.dataset.date); return; }
+  if (e.key === 'Enter' && e.target.id === 'w-input') { e.preventDefault(); weightSave(S.selDate, e.target.value, 'card'); return; }
+  if (e.key === 'Enter' && e.target.id === 'wv-input') { e.preventDefault(); const t = todayStr(); weightSave(S.wvDate && S.wvDate <= t ? S.wvDate : t, e.target.value, 'view'); return; }
   if (e.key === 'Enter' && (e.target.id === 'log-amount' || e.target.id === 'log-note') && S.openDetail) { e.preventDefault(); logAdd(S.openDetail, S.logAmount, S.logNote); return; }
   if (e.key === 'Escape' && S.openReason) { const id = S.openReason; S.openReason = null; render(); const t = document.querySelector('[data-key="tick-' + id + '"]'); if (t) t.focus(); return; }
   if (e.key === 'Escape' && S.openDetail) { const id = S.openDetail; S.openDetail = null; S.logErr = ''; render(); const o = document.querySelector('[data-key="open-' + id + '"]'); if (o) o.focus(); }
